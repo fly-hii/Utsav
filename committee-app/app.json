@@ -46,7 +46,9 @@
         {
           "locationAlwaysAndWhenInUsePermission": "Allow Utsav Committee to record your temple & festival GPS coordinates."
         }
-      ]
+      ],
+      "expo-font",
+      "expo-video"
     ],
     "extra": {
       "router": {},

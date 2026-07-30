@@ -32,7 +32,9 @@
         {
           "locationAlwaysAndWhenInUsePermission": "Allow Utsav to discover nearby village festival committees."
         }
-      ]
+      ],
+      "expo-font",
+      "expo-video"
     ],
     "extra": {
       "router": {},
