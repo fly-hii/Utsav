@@ -4,6 +4,11 @@ import Constants from 'expo-constants';
 import * as FileSystem from 'expo-file-system/legacy';
 
 const getBackendUrl = () => {
+  // Use production URL in production builds
+  if (!__DEV__) {
+    return 'https://utsavbackend.flyhii.in/api';
+  }
+
   const debuggerHost = Constants.expoConfig?.hostUri;
   if (debuggerHost) {
     // debuggerHost could be exp://192.168.x.x:8081 or 192.168.x.x:8081
