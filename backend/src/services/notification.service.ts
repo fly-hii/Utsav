@@ -1,12 +1,28 @@
-import { Expo, ExpoPushMessage } from 'expo-server-sdk';
 import pool from '../config/database';
 import { RowDataPacket } from 'mysql2';
 
-// Create a new Expo SDK client
-// optionally providing an access token if you have enabled push security
-const expo = new Expo();
+// Type definitions to replace static import
+type ExpoPushMessage = any;
+
+let Expo: any;
+let expo: any;
+
+/**
+ * Lazy loads the Expo SDK client using dynamic import 
+ * to prevent ERR_REQUIRE_ESM in Vercel Serverless (CommonJS) environments.
+ */
+async function getExpo() {
+  if (!Expo) {
+    const sdk = await import('expo-server-sdk');
+    Expo = sdk.Expo;
+    expo = new Expo();
+  }
+  return { Expo, expo };
+}
 
 export const sendPushNotification = async (pushToken: string, title: string, body: string, data?: any) => {
+  const { Expo, expo } = await getExpo();
+
   // Check that all your push tokens appear to be valid Expo push tokens
   if (!Expo.isExpoPushToken(pushToken)) {
     console.error(`Push token ${pushToken} is not a valid Expo push token`);
@@ -42,6 +58,8 @@ export const notifyCommitteeMembers = async (committeeId: string, title: string,
        WHERE cm.committeeId = ? AND cm.isActive = TRUE AND u.push_token IS NOT NULL`,
       [committeeId]
     );
+
+    const { Expo, expo } = await getExpo();
 
     const validTokens = members.map(m => m.push_token).filter(t => Expo.isExpoPushToken(t));
     
