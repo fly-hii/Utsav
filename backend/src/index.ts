@@ -4,6 +4,17 @@ import { env } from './config/env';
 import { initializeWebSocket } from './websocket/socket';
 import { testConnection } from './config/database';
 
+// Global error handlers to prevent server crashes
+process.on('uncaughtException', (err) => {
+  console.error('❌ UNCAUGHT EXCEPTION: Server caught an unexpected error!');
+  console.error(err);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('❌ UNHANDLED REJECTION: Promise rejection was not caught!');
+  console.error('Reason:', reason);
+});
+
 async function bootstrap() {
   const app = createApp();
   const server = http.createServer(app);
