@@ -1,0 +1,502 @@
+// ============================================================
+// UTSAV - Village Festival Management Ecosystem
+// Prisma Schema - MySQL 8
+// ============================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// ENUMS
+// ============================================================
+
+enum UserRole {
+  SUPER_ADMIN
+  COMMITTEE_ADMIN
+  COMMITTEE_MEMBER
+  USER
+}
+
+enum CommitteeStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  SUSPENDED
+  INFO_REQUESTED
+}
+
+enum DocumentType {
+  REGISTRATION_CERT
+  IDENTITY_PROOF
+  TEMPLE_IMAGE
+  COMMITTEE_LOGO
+}
+
+enum PaymentMethod {
+  CASH
+  UPI
+  CARD
+  NET_BANKING
+  CHEQUE
+  OTHER
+}
+
+enum EventStatus {
+  UPCOMING
+  ONGOING
+  COMPLETED
+  CANCELLED
+}
+
+enum ReelStatus {
+  PROCESSING
+  PUBLISHED
+  REJECTED
+}
+
+enum ExpenseCategory {
+  DECORATION
+  FOOD
+  TRANSPORT
+  SOUND
+  LIGHTING
+  PRIEST
+  FLOWERS
+  PRINTING
+  RENTAL
+  DONATION_EXPENSE
+  CONSTRUCTION
+  MAINTENANCE
+  OTHER
+}
+
+enum NotificationType {
+  DONATION_RECEIVED
+  EXPENSE_ADDED
+  MEMBER_ADDED
+  MEMBER_REMOVED
+  EVENT_CREATED
+  EVENT_REMINDER
+  EVENT_UPDATED
+  REEL_COMMENT
+  REEL_LIKE
+  REEL_PUBLISHED
+  COMMITTEE_APPROVED
+  COMMITTEE_REJECTED
+  COMMITTEE_SUSPENDED
+  COMMITTEE_INFO_REQUESTED
+  ANNOUNCEMENT
+  PASSWORD_RESET
+}
+
+enum MemberRole {
+  ADMIN
+  MEMBER
+}
+
+// ============================================================
+// USER
+// ============================================================
+
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  phone     String   @unique
+  email     String?  @unique
+  password  String
+  role      UserRole @default(USER)
+  avatar    String?  // S3 key
+  avatarUrl String?  // S3 URL
+  isActive  Boolean  @default(true)
+  latitude  Float?
+  longitude Float?
+  address   String?  @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  committeeMemberships CommitteeMember[]
+  donations            Donation[]         @relation("DonorDonations")
+  addedDonations       Donation[]         @relation("AddedByDonations")
+  expenses             Expense[]
+  reels                Reel[]
+  reelLikes            ReelLike[]
+  reelComments         ReelComment[]
+  reelShares           ReelShare[]
+  reelViews            ReelView[]
+  galleryUploads       Gallery[]
+  notifications        Notification[]
+  refreshTokens        RefreshToken[]
+
+  @@index([phone])
+  @@index([email])
+  @@index([role])
+  @@map("users")
+}
+
+// ============================================================
+// COMMITTEE
+// ============================================================
+
+model Committee {
+  id                    String          @id @default(uuid())
+  name                  String
+  templeName            String
+  festivalName          String
+  village               String
+  mandal                String
+  district              String
+  state                 String
+  address               String          @db.Text
+  latitude              Float
+  longitude             Float
+  presidentName         String
+  secretaryName         String
+  phone                 String
+  email                 String?
+  description           String?         @db.Text
+  logo                  String?         // S3 key
+  logoUrl               String?         // S3 URL
+  status                CommitteeStatus @default(PENDING)
+  rejectionReason       String?         @db.Text
+  infoRequestMessage    String?         @db.Text
+  isActive              Boolean         @default(true)
+  approvedAt            DateTime?
+  approvedBy            String?         // Admin user ID
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+
+  // Relations
+  documents  CommitteeDocument[]
+  members    CommitteeMember[]
+  events     Event[]
+  donations  Donation[]
+  expenses   Expense[]
+  reels      Reel[]
+  gallery    Gallery[]
+
+  @@index([status])
+  @@index([village])
+  @@index([district])
+  @@index([state])
+  @@index([latitude, longitude])
+  @@map("committees")
+}
+
+model CommitteeDocument {
+  id          String       @id @default(uuid())
+  committeeId String
+  type        DocumentType
+  s3Key       String
+  s3Url       String
+  fileName    String
+  fileSize    Int?         // in bytes
+  mimeType    String?
+  createdAt   DateTime     @default(now())
+
+  // Relations
+  committee Committee @relation(fields: [committeeId], references: [id], onDelete: Cascade)
+
+  @@index([committeeId])
+  @@map("committee_documents")
+}
+
+model CommitteeMember {
+  id          String     @id @default(uuid())
+  userId      String
+  committeeId String
+  role        MemberRole @default(MEMBER)
+  isActive    Boolean    @default(true)
+  joinedAt    DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  // Relations
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  committee Committee @relation(fields: [committeeId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, committeeId])
+  @@index([committeeId])
+  @@index([userId])
+  @@map("committee_members")
+}
+
+// ============================================================
+// EVENTS
+// ============================================================
+
+model Event {
+  id          String      @id @default(uuid())
+  committeeId String
+  name        String
+  festival    String?
+  description String?     @db.Text
+  banner      String?     // S3 key
+  bannerUrl   String?     // S3 URL
+  venue       String?
+  date        DateTime
+  endDate     DateTime?
+  time        String?
+  guest       String?     // Guest of honor
+  budget      Float?
+  organizer   String?
+  status      EventStatus @default(UPCOMING)
+  isPublic    Boolean     @default(true)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  // Relations
+  committee Committee  @relation(fields: [committeeId], references: [id], onDelete: Cascade)
+  donations Donation[]
+  reels     Reel[]
+  gallery   Gallery[]
+
+  @@index([committeeId])
+  @@index([date])
+  @@index([status])
+  @@map("events")
+}
+
+// ============================================================
+// DONATIONS (Manual Only)
+// ============================================================
+
+model Donation {
+  id           String        @id @default(uuid())
+  committeeId  String
+  eventId      String?
+  donorId      String?       // Linked user (may be null for unregistered donors)
+  addedById    String        // Committee member who recorded it
+  donorName    String
+  donorPhone   String?
+  donorAddress String?       @db.Text
+  amount       Float
+  purpose      String?
+  paymentMethod PaymentMethod @default(CASH)
+  remarks      String?       @db.Text
+  receiptNo    String?       @unique
+  date         DateTime      @default(now())
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  // Relations
+  committee Committee @relation(fields: [committeeId], references: [id], onDelete: Cascade)
+  event     Event?    @relation(fields: [eventId], references: [id], onDelete: SetNull)
+  donor     User?     @relation("DonorDonations", fields: [donorId], references: [id], onDelete: SetNull)
+  addedBy   User      @relation("AddedByDonations", fields: [addedById], references: [id])
+
+  @@index([committeeId])
+  @@index([eventId])
+  @@index([donorId])
+  @@index([addedById])
+  @@index([date])
+  @@map("donations")
+}
+
+// ============================================================
+// EXPENSES
+// ============================================================
+
+model Expense {
+  id          String          @id @default(uuid())
+  committeeId String
+  addedById   String
+  category    ExpenseCategory
+  vendor      String?
+  amount      Float
+  billS3Key   String?         // S3 key for bill image
+  billS3Url   String?         // S3 URL
+  description String?         @db.Text
+  date        DateTime        @default(now())
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  // Relations
+  committee Committee @relation(fields: [committeeId], references: [id], onDelete: Cascade)
+  addedBy   User      @relation(fields: [addedById], references: [id])
+
+  @@index([committeeId])
+  @@index([addedById])
+  @@index([date])
+  @@index([category])
+  @@map("expenses")
+}
+
+// ============================================================
+// REELS
+// ============================================================
+
+model Reel {
+  id             String     @id @default(uuid())
+  committeeId    String
+  eventId        String?
+  uploadedById   String
+  videoS3Key     String
+  videoS3Url     String
+  thumbnailS3Key String?
+  thumbnailS3Url String?
+  previewS3Key   String?    // Short preview/gif
+  previewS3Url   String?
+  caption        String?    @db.Text
+  location       String?
+  hashtags       String?    @db.Text  // Comma-separated
+  status         ReelStatus @default(PROCESSING)
+  viewCount      Int        @default(0)
+  likeCount      Int        @default(0)
+  commentCount   Int        @default(0)
+  shareCount     Int        @default(0)
+  duration       Int?       // in seconds
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  // Relations
+  committee  Committee     @relation(fields: [committeeId], references: [id], onDelete: Cascade)
+  event      Event?        @relation(fields: [eventId], references: [id], onDelete: SetNull)
+  uploadedBy User          @relation(fields: [uploadedById], references: [id])
+  likes      ReelLike[]
+  comments   ReelComment[]
+  shares     ReelShare[]
+  views      ReelView[]
+
+  @@index([committeeId])
+  @@index([eventId])
+  @@index([uploadedById])
+  @@index([status])
+  @@index([createdAt])
+  @@map("reels")
+}
+
+model ReelLike {
+  id        String   @id @default(uuid())
+  reelId    String
+  userId    String
+  createdAt DateTime @default(now())
+
+  // Relations
+  reel Reel @relation(fields: [reelId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([reelId, userId])
+  @@index([reelId])
+  @@index([userId])
+  @@map("reel_likes")
+}
+
+model ReelComment {
+  id        String   @id @default(uuid())
+  reelId    String
+  userId    String
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  reel Reel @relation(fields: [reelId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([reelId])
+  @@index([userId])
+  @@map("reel_comments")
+}
+
+model ReelShare {
+  id        String   @id @default(uuid())
+  reelId    String
+  userId    String
+  platform  String?  // whatsapp, facebook, twitter, etc.
+  createdAt DateTime @default(now())
+
+  // Relations
+  reel Reel @relation(fields: [reelId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([reelId])
+  @@index([userId])
+  @@map("reel_shares")
+}
+
+model ReelView {
+  id        String   @id @default(uuid())
+  reelId    String
+  userId    String?  // Can be null for anonymous views
+  createdAt DateTime @default(now())
+
+  // Relations
+  reel Reel  @relation(fields: [reelId], references: [id], onDelete: Cascade)
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([reelId])
+  @@index([userId])
+  @@map("reel_views")
+}
+
+// ============================================================
+// GALLERY
+// ============================================================
+
+model Gallery {
+  id           String   @id @default(uuid())
+  committeeId  String
+  eventId      String?
+  uploadedById String
+  imageS3Key   String
+  imageS3Url   String
+  caption      String?
+  createdAt    DateTime @default(now())
+
+  // Relations
+  committee  Committee @relation(fields: [committeeId], references: [id], onDelete: Cascade)
+  event      Event?    @relation(fields: [eventId], references: [id], onDelete: SetNull)
+  uploadedBy User      @relation(fields: [uploadedById], references: [id])
+
+  @@index([committeeId])
+  @@index([eventId])
+  @@map("gallery")
+}
+
+// ============================================================
+// NOTIFICATIONS
+// ============================================================
+
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String
+  type      NotificationType
+  title     String
+  body      String           @db.Text
+  data      Json?            // Extra metadata (committeeId, donationId, etc.)
+  isRead    Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([isRead])
+  @@index([createdAt])
+  @@map("notifications")
+}
+
+// ============================================================
+// AUTH TOKENS
+// ============================================================
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  userId    String
+  token     String   @unique @db.VarChar(500)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token])
+  @@map("refresh_tokens")
+}
