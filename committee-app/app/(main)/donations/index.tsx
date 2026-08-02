@@ -1,5 +1,5 @@
-import { useState, useEffect, useMemo } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator, Modal, Image } from 'react-native';
+import { useState, useEffect, useMemo, useRef } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator, Modal, Image, KeyboardAvoidingView, Platform, LayoutChangeEvent } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { COLORS, GRADIENTS } from '../../../constants/theme';
@@ -14,6 +14,8 @@ export default function AddDonationScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { committeeId, committeeDetails } = useCommittee();
+  const scrollRef = useRef<ScrollView>(null);
+  const donationsListY = useRef<number>(0);
 
   const [donorName, setDonorName] = useState('');
   const [donorPhone, setDonorPhone] = useState('');
@@ -21,6 +23,7 @@ export default function AddDonationScreen() {
   const [purpose, setPurpose] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<'CASH' | 'UPI' | 'CHEQUE'>('CASH');
   const [submitting, setSubmitting] = useState(false);
+  const [formExpanded, setFormExpanded] = useState(true);
 
   const [donations, setDonations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -73,6 +76,10 @@ export default function AddDonationScreen() {
   }, [committeeId]);
 
   const handleSubmit = async () => {
+    if (!committeeId) {
+      Alert.alert('Error', 'Committee data not loaded yet. Please wait and try again.');
+      return;
+    }
     if (!donorName || !amount) {
       Alert.alert('Validation Error', 'Please enter donor name and donation amount.');
       return;
@@ -92,7 +99,7 @@ export default function AddDonationScreen() {
       Alert.alert(
         'Donation Saved! 💐',
         `₹${amount} recorded for ${donorName}. Digital receipt ${res?.data?.receiptNo || 'generated'} successfully.`,
-        [{ text: 'OK', onPress: () => { setDonorName(''); setDonorPhone(''); setAmount(''); setPurpose(''); fetchDonations(); } }]
+        [{ text: 'OK', onPress: () => { setDonorName(''); setDonorPhone(''); setAmount(''); setPurpose(''); setFormExpanded(false); fetchDonations(); } }]
       );
     } catch (err: any) {
       Alert.alert('Error', err?.response?.data?.message || err?.message || 'Could not save donation.');
@@ -116,6 +123,20 @@ export default function AddDonationScreen() {
     }
   };
 
+  const handleFilterPress = (status: 'ALL' | 'PENDING' | 'VERIFIED' | 'REJECTED') => {
+    setFilterStatus(status);
+    // Auto-scroll to the donations list section
+    if (donationsListY.current > 0 && scrollRef.current) {
+      setTimeout(() => {
+        scrollRef.current?.scrollTo({ y: donationsListY.current - 10, animated: true });
+      }, 100);
+    }
+  };
+
+  const onDonationsListLayout = (event: LayoutChangeEvent) => {
+    donationsListY.current = event.nativeEvent.layout.y;
+  };
+
   return (
     <LinearGradient colors={GRADIENTS.dark} style={styles.container}>
       {/* Header with Back Button */}
@@ -131,125 +152,157 @@ export default function AddDonationScreen() {
         </View>
       </View>
 
-      <ScrollView
-        contentContainerStyle={[
-          styles.scrollContent,
-          { paddingBottom: 20, paddingTop: 10 },
-        ]}
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 20}
       >
+        <ScrollView
+          ref={scrollRef}
+          contentContainerStyle={[
+            styles.scrollContent,
+            { paddingBottom: 20, paddingTop: 10 },
+          ]}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
 
-
-        <BlurView intensity={20} tint="dark" style={styles.glassCard}>
-          <View style={styles.group}>
-            <Text style={styles.label}>Donor Full Name *</Text>
-            <TextInput value={donorName} onChangeText={setDonorName} placeholder="e.g. Ramesh Varma" placeholderTextColor={COLORS.textMuted} style={styles.input} />
-          </View>
-
-          <View style={styles.group}>
-            <Text style={styles.label}>Donor Phone Number</Text>
-            <TextInput value={donorPhone} onChangeText={setDonorPhone} placeholder="10-digit phone" placeholderTextColor={COLORS.textMuted} keyboardType="phone-pad" style={styles.input} />
-          </View>
-
-          <View style={styles.group}>
-            <Text style={styles.label}>Donation Amount (₹) *</Text>
-            <TextInput value={amount} onChangeText={setAmount} placeholder="e.g. 5000" placeholderTextColor={COLORS.textMuted} keyboardType="numeric" style={[styles.input, { fontSize: 18, fontWeight: '700', color: COLORS.gold }]} />
-          </View>
-
-          <View style={styles.group}>
-            <Text style={styles.label}>Purpose / Festival Offering</Text>
-            <TextInput value={purpose} onChangeText={setPurpose} placeholder="e.g. Annadanam / Prasadam" placeholderTextColor={COLORS.textMuted} style={styles.input} />
-          </View>
-
-          <Text style={styles.label}>Payment Method</Text>
-          <View style={styles.methodRow}>
-            {(['CASH', 'UPI', 'CHEQUE'] as const).map((method) => (
-              <TouchableOpacity key={method} style={[styles.methodChip, paymentMethod === method && styles.methodActive]} onPress={() => setPaymentMethod(method)}>
-                <Text style={[styles.methodText, paymentMethod === method && styles.methodTextActive]}>{method}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-
-          <TouchableOpacity style={styles.submitBtn} onPress={handleSubmit} disabled={submitting} activeOpacity={0.85}>
-            <LinearGradient colors={GRADIENTS.festival} style={styles.submitGradient}>
-              {submitting ? (
-                <ActivityIndicator color="#FFF" />
-              ) : (
-                <>
-                  <Ionicons name="checkmark-circle-outline" size={20} color="#FFF" style={{ marginRight: 6 }} />
-                  <Text style={styles.submitText}>Save & Print Digital Receipt</Text>
-                </>
-              )}
-            </LinearGradient>
-          </TouchableOpacity>
-        </BlurView>
-
-        {/* Live Database Donations List */}
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-          <Text style={styles.sectionTitle}>Recorded Donations ({sortedAndFilteredDonations.length})</Text>
-        </View>
-
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
-          {(['ALL', 'PENDING', 'VERIFIED', 'REJECTED'] as const).map(status => (
-            <TouchableOpacity 
-              key={status} 
-              style={[styles.filterChip, filterStatus === status && styles.filterChipActive]}
-              onPress={() => setFilterStatus(status)}
-            >
-              <Text style={[styles.filterChipText, filterStatus === status && styles.filterChipTextActive]}>
-                {status === 'ALL' ? 'All' : status}
+          {/* Collapsible Form Header */}
+          <TouchableOpacity
+            style={styles.formToggle}
+            onPress={() => setFormExpanded(!formExpanded)}
+            activeOpacity={0.8}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Ionicons name="add-circle-outline" size={20} color={COLORS.primaryOrange} style={{ marginRight: 8 }} />
+              <Text style={styles.formToggleText}>
+                {formExpanded ? 'Collapse Form' : 'Add New Donation'}
               </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
+            </View>
+            <Ionicons
+              name={formExpanded ? 'chevron-up' : 'chevron-down'}
+              size={20}
+              color={COLORS.textSecondary}
+            />
+          </TouchableOpacity>
 
-        {loading ? (
-          <ActivityIndicator color={COLORS.primaryOrange} style={{ marginVertical: 14 }} />
-        ) : sortedAndFilteredDonations.length === 0 ? (
-          <BlurView intensity={15} tint="dark" style={styles.emptyCard}>
-            <Text style={styles.emptyText}>No donations found.</Text>
-          </BlurView>
-        ) : (
-          sortedAndFilteredDonations.map((item: any) => (
-            <TouchableOpacity key={item.id} onPress={() => { if (item.status === 'PENDING') setSelectedDonation(item); }} activeOpacity={0.8}>
-              <BlurView intensity={20} tint="dark" style={[styles.itemCard, item.status === 'PENDING' && { borderColor: COLORS.gold, backgroundColor: 'rgba(255, 204, 0, 0.1)' }]}>
-                <View style={styles.itemHeader}>
-                  <Text style={styles.donorTitle}>{item.donorName}</Text>
-                  <Text style={[styles.itemAmount, item.status === 'PENDING' && { color: COLORS.gold }]}>+₹{(item.amount || 0).toLocaleString('en-IN')}</Text>
-                </View>
-                <Text style={styles.itemSub}>{item.purpose || 'General Donation'} • {item.paymentMethod || 'CASH'}</Text>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                    {item.receiptNo && <Text style={styles.receiptTag}>Receipt #{item.receiptNo}</Text>}
-                    {item.status === 'VERIFIED' && (
-                      <TouchableOpacity 
-                        style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(6, 214, 160, 0.2)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 }}
-                        onPress={() => handleExportReceipt(item)}
-                      >
-                        {downloadingReceipt === item.id ? (
-                          <ActivityIndicator size="small" color={COLORS.success} />
-                        ) : (
-                          <>
-                            <Ionicons name="download-outline" size={14} color={COLORS.success} />
-                            <Text style={{ fontSize: 10, color: COLORS.success, fontWeight: '700' }}>Download</Text>
-                          </>
-                        )}
-                      </TouchableOpacity>
-                    )}
-                  </View>
-                  {item.status === 'PENDING' && (
-                    <View style={styles.pendingBadge}>
-                      <Text style={styles.pendingText}>Verification Pending</Text>
-                    </View>
+          {/* Collapsible Form */}
+          {formExpanded && (
+            <BlurView intensity={20} tint="dark" style={styles.glassCard}>
+              <View style={styles.group}>
+                <Text style={styles.label}>Donor Full Name *</Text>
+                <TextInput value={donorName} onChangeText={setDonorName} placeholder="e.g. Ramesh Varma" placeholderTextColor={COLORS.textMuted} style={styles.input} />
+              </View>
+
+              <View style={styles.group}>
+                <Text style={styles.label}>Donor Phone Number</Text>
+                <TextInput value={donorPhone} onChangeText={setDonorPhone} placeholder="10-digit phone" placeholderTextColor={COLORS.textMuted} keyboardType="phone-pad" style={styles.input} />
+              </View>
+
+              <View style={styles.group}>
+                <Text style={styles.label}>Donation Amount (₹) *</Text>
+                <TextInput value={amount} onChangeText={setAmount} placeholder="e.g. 5000" placeholderTextColor={COLORS.textMuted} keyboardType="numeric" style={[styles.input, { fontSize: 18, fontWeight: '700', color: COLORS.gold }]} />
+              </View>
+
+              <View style={styles.group}>
+                <Text style={styles.label}>Purpose / Festival Offering</Text>
+                <TextInput value={purpose} onChangeText={setPurpose} placeholder="e.g. Annadanam / Prasadam" placeholderTextColor={COLORS.textMuted} style={styles.input} />
+              </View>
+
+              <Text style={styles.label}>Payment Method</Text>
+              <View style={styles.methodRow}>
+                {(['CASH', 'UPI', 'CHEQUE'] as const).map((method) => (
+                  <TouchableOpacity key={method} style={[styles.methodChip, paymentMethod === method && styles.methodActive]} onPress={() => setPaymentMethod(method)}>
+                    <Text style={[styles.methodText, paymentMethod === method && styles.methodTextActive]}>{method}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              <TouchableOpacity style={styles.submitBtn} onPress={handleSubmit} disabled={submitting} activeOpacity={0.85}>
+                <LinearGradient colors={GRADIENTS.festival} style={styles.submitGradient}>
+                  {submitting ? (
+                    <ActivityIndicator color="#FFF" />
+                  ) : (
+                    <>
+                      <Ionicons name="checkmark-circle-outline" size={20} color="#FFF" style={{ marginRight: 6 }} />
+                      <Text style={styles.submitText}>Save & Print Digital Receipt</Text>
+                    </>
                   )}
-                  {item.status === 'REJECTED' && (
-                    <Text style={[styles.receiptTag, { color: COLORS.error }]}>REJECTED</Text>
-                  )}
-                </View>
+                </LinearGradient>
+              </TouchableOpacity>
+            </BlurView>
+          )}
+
+          {/* Live Database Donations List */}
+          <View onLayout={onDonationsListLayout}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <Text style={styles.sectionTitle}>Recorded Donations ({sortedAndFilteredDonations.length})</Text>
+            </View>
+
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
+              {(['ALL', 'PENDING', 'VERIFIED', 'REJECTED'] as const).map(status => (
+                <TouchableOpacity 
+                  key={status} 
+                  style={[styles.filterChip, filterStatus === status && styles.filterChipActive]}
+                  onPress={() => handleFilterPress(status)}
+                >
+                  <Text style={[styles.filterChipText, filterStatus === status && styles.filterChipTextActive]}>
+                    {status === 'ALL' ? 'All' : status}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+
+            {loading ? (
+              <ActivityIndicator color={COLORS.primaryOrange} style={{ marginVertical: 14 }} />
+            ) : sortedAndFilteredDonations.length === 0 ? (
+              <BlurView intensity={15} tint="dark" style={styles.emptyCard}>
+                <Text style={styles.emptyText}>No donations found.</Text>
               </BlurView>
-            </TouchableOpacity>
-          ))
-        )}
-      </ScrollView>
+            ) : (
+              sortedAndFilteredDonations.map((item: any) => (
+                <TouchableOpacity key={item.id} onPress={() => { if (item.status === 'PENDING') setSelectedDonation(item); }} activeOpacity={0.8}>
+                  <BlurView intensity={20} tint="dark" style={[styles.itemCard, item.status === 'PENDING' && { borderColor: COLORS.gold, backgroundColor: 'rgba(255, 204, 0, 0.1)' }]}>
+                    <View style={styles.itemHeader}>
+                      <Text style={styles.donorTitle}>{item.donorName}</Text>
+                      <Text style={[styles.itemAmount, item.status === 'PENDING' && { color: COLORS.gold }]}>+₹{(item.amount || 0).toLocaleString('en-IN')}</Text>
+                    </View>
+                    <Text style={styles.itemSub}>{item.purpose || 'General Donation'} • {item.paymentMethod || 'CASH'}</Text>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                        {item.receiptNo && <Text style={styles.receiptTag}>Receipt #{item.receiptNo}</Text>}
+                        {item.status === 'VERIFIED' && (
+                          <TouchableOpacity 
+                            style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(6, 214, 160, 0.2)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 }}
+                            onPress={() => handleExportReceipt(item)}
+                          >
+                            {downloadingReceipt === item.id ? (
+                              <ActivityIndicator size="small" color={COLORS.success} />
+                            ) : (
+                              <>
+                                <Ionicons name="download-outline" size={14} color={COLORS.success} />
+                                <Text style={{ fontSize: 10, color: COLORS.success, fontWeight: '700' }}>Download</Text>
+                              </>
+                            )}
+                          </TouchableOpacity>
+                        )}
+                      </View>
+                      {item.status === 'PENDING' && (
+                        <View style={styles.pendingBadge}>
+                          <Text style={styles.pendingText}>Verification Pending</Text>
+                        </View>
+                      )}
+                      {item.status === 'REJECTED' && (
+                        <Text style={[styles.receiptTag, { color: COLORS.error }]}>REJECTED</Text>
+                      )}
+                    </View>
+                  </BlurView>
+                </TouchableOpacity>
+              ))
+            )}
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
 
       {/* Verification Modal */}
       <Modal visible={!!selectedDonation} animationType="slide" transparent={true} onRequestClose={() => setSelectedDonation(null)}>
@@ -302,6 +355,18 @@ const styles = StyleSheet.create({
   backBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: COLORS.glassCard, justifyContent: 'center', alignItems: 'center', marginRight: 12, borderWidth: 1, borderColor: COLORS.glassBorder },
   title: { fontSize: 20, fontWeight: '800', color: COLORS.textPrimary },
   subtitle: { fontSize: 12, color: COLORS.textSecondary, marginTop: 2 },
+  formToggle: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: 'rgba(245, 158, 11, 0.12)',
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(245, 158, 11, 0.3)',
+  },
+  formToggleText: { fontSize: 14, fontWeight: '700', color: COLORS.primaryOrange },
   glassCard: { borderRadius: 20, padding: 20, borderWidth: 1, borderColor: COLORS.glassBorder, backgroundColor: COLORS.glassCard, marginBottom: 24 },
   group: { marginBottom: 16 },
   label: { fontSize: 12, fontWeight: '700', color: COLORS.textSecondary, marginBottom: 6 },

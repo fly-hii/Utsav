@@ -13,7 +13,9 @@ import {
   Modal,
   Image,
   RefreshControl,
+  KeyboardAvoidingView,
 } from 'react-native';
+import * as VideoThumbnails from 'expo-video-thumbnails';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { COLORS, GRADIENTS } from '../../../constants/theme';
@@ -22,6 +24,23 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import { useVideoPlayer, VideoView } from 'expo-video';
+
+const ReelThumbnail = ({ item }: { item: any }) => {
+  const [thumb, setThumb] = useState<string | null>(item.thumbnailS3Url || null);
+
+  useEffect(() => {
+    if (!item.thumbnailS3Url && item.videoS3Url && !thumb) {
+      VideoThumbnails.getThumbnailAsync(item.videoS3Url, { time: 1000 })
+        .then((res) => setThumb(res.uri))
+        .catch((err) => console.log('Thumbnail err:', err));
+    }
+  }, [item.videoS3Url, item.thumbnailS3Url]);
+
+  if (thumb) {
+    return <Image source={{ uri: thumb }} style={StyleSheet.absoluteFill} resizeMode="cover" />;
+  }
+  return <Ionicons name="film" size={24} color={COLORS.primaryOrange} />;
+};
 import { ReelService } from '../../../services/api';
 
 export default function CommitteeReelsManagementScreen() {
@@ -280,11 +299,7 @@ export default function CommitteeReelsManagementScreen() {
                   <BlurView intensity={25} tint="dark" style={styles.reelCard}>
                     <View style={styles.reelCardHeader}>
                       <View style={styles.thumbnailSim}>
-                        {item.thumbnailS3Url ? (
-                          <Image source={{ uri: item.thumbnailS3Url }} style={StyleSheet.absoluteFill} resizeMode="cover" />
-                        ) : (
-                          <Ionicons name="film" size={24} color={COLORS.primaryOrange} />
-                        )}
+                        <ReelThumbnail item={item} />
                       </View>
 
                       <View style={{ flex: 1, paddingLeft: 12 }}>
@@ -338,7 +353,12 @@ export default function CommitteeReelsManagementScreen() {
 
         {/* TAB 2: POST NEW REEL FORM */}
         {activeTab === 'CREATE' && (
-          <ScrollView showsVerticalScrollIndicator={false}>
+          <KeyboardAvoidingView
+            style={{ flex: 1 }}
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 120 : 20}
+          >
+          <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
             <BlurView intensity={20} tint="dark" style={styles.glassCard}>
               <View style={styles.group}>
                 <Text style={styles.label}>Festival Video Reel File (Max 5 Min / 500 MB)</Text>
@@ -420,6 +440,7 @@ export default function CommitteeReelsManagementScreen() {
               </TouchableOpacity>
             </BlurView>
           </ScrollView>
+          </KeyboardAvoidingView>
         )}
 
         {/* EDIT REEL MODAL */}

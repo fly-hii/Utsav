@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator, Image } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator, Image, KeyboardAvoidingView, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
@@ -40,7 +40,13 @@ export default function UserLoginScreen() {
 
   return (
     <LinearGradient colors={GRADIENTS.dark} style={styles.container}>
+      <KeyboardAvoidingView 
+        style={{ flex: 1 }} 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+      >
       <ScrollView
+        keyboardShouldPersistTaps="handled"
         contentContainerStyle={[
           styles.content,
           { paddingTop: insets.top + 20, paddingBottom: insets.bottom + 30 },
@@ -52,46 +58,47 @@ export default function UserLoginScreen() {
           <Text style={styles.subtitle}>Enter mobile credentials to log in and explore village festivals</Text>
         </View>
 
-        <BlurView intensity={20} tint="dark" style={styles.card}>
-          <View style={styles.group}>
-            <Text style={styles.label}>Mobile Phone Number *</Text>
-            <TextInput
-              value={phone}
-              onChangeText={setPhone}
-              placeholder="10-digit mobile number"
-              placeholderTextColor={COLORS.textSecondary}
-              keyboardType="phone-pad"
-              style={styles.input}
-            />
-          </View>
+          <BlurView intensity={20} tint="dark" style={styles.card}>
+            <View style={styles.group}>
+              <Text style={styles.label}>Mobile Phone Number *</Text>
+              <TextInput
+                value={phone}
+                onChangeText={setPhone}
+                placeholder="10-digit mobile number"
+                placeholderTextColor={COLORS.textSecondary}
+                keyboardType="phone-pad"
+                style={styles.input}
+              />
+            </View>
 
-          <View style={styles.group}>
-            <Text style={styles.label}>Password *</Text>
-            <TextInput
-              value={password}
-              onChangeText={setPassword}
-              placeholder="Enter password"
-              placeholderTextColor={COLORS.textSecondary}
-              secureTextEntry
-              style={styles.input}
-            />
-          </View>
+            <View style={styles.group}>
+              <Text style={styles.label}>Password *</Text>
+              <TextInput
+                value={password}
+                onChangeText={setPassword}
+                placeholder="Enter password"
+                placeholderTextColor={COLORS.textSecondary}
+                secureTextEntry
+                style={styles.input}
+              />
+            </View>
 
-          <TouchableOpacity onPress={handleUserLogin} disabled={loading} activeOpacity={0.85}>
-            <LinearGradient colors={GRADIENTS.festival} style={styles.btn}>
-              {loading ? (
-                <ActivityIndicator color={COLORS.textPrimary} />
-              ) : (
-                <Text style={styles.btnText}>Sign In & Explore Festivals</Text>
-              )}
-            </LinearGradient>
-          </TouchableOpacity>
+            <TouchableOpacity onPress={handleUserLogin} disabled={loading} activeOpacity={0.85}>
+              <LinearGradient colors={GRADIENTS.festival} style={styles.btn}>
+                {loading ? (
+                  <ActivityIndicator color={COLORS.textPrimary} />
+                ) : (
+                  <Text style={styles.btnText}>Sign In & Explore Festivals</Text>
+                )}
+              </LinearGradient>
+            </TouchableOpacity>
 
-          <TouchableOpacity onPress={() => router.push('/(auth)/register')} style={styles.regLink}>
-            <Text style={styles.regText}>New to Utsav? <Text style={{ color: COLORS.primaryOrange, fontWeight: '800' }}>Create Account</Text></Text>
-          </TouchableOpacity>
-        </BlurView>
+            <TouchableOpacity onPress={() => router.push('/(auth)/register')} style={styles.regLink}>
+              <Text style={styles.regText}>New to Utsav? <Text style={{ color: COLORS.primaryOrange, fontWeight: '800' }}>Create Account</Text></Text>
+            </TouchableOpacity>
+          </BlurView>
       </ScrollView>
+      </KeyboardAvoidingView>
     </LinearGradient>
   );
 }

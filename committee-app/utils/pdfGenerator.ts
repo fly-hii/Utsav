@@ -1,6 +1,41 @@
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import { documentDirectory, writeAsStringAsync, EncodingType } from 'expo-file-system/legacy';
+import { Alert } from 'react-native';
+
+/**
+ * Shows a success alert after PDF is saved, then optionally opens share sheet.
+ */
+const showDownloadSuccessAndShare = (fileUri: string, title: string) => {
+  return new Promise<void>((resolve) => {
+    Alert.alert(
+      'Download Complete ✅',
+      `${title} has been saved successfully to your device.`,
+      [
+        {
+          text: 'Share PDF',
+          onPress: async () => {
+            try {
+              await Sharing.shareAsync(fileUri, {
+                UTI: '.pdf',
+                mimeType: 'application/pdf',
+                dialogTitle: `Share ${title}`,
+              });
+            } catch {
+              // User cancelled sharing, ignore
+            }
+            resolve();
+          },
+        },
+        {
+          text: 'OK',
+          style: 'cancel',
+          onPress: () => resolve(),
+        },
+      ]
+    );
+  });
+};
 
 export const generateAuditReportPDF = async (committeeDetails: any, report: any) => {
   const html = `
@@ -74,6 +109,27 @@ export const generateAuditReportPDF = async (committeeDetails: any, report: any)
         `).join('')}
       </table>
 
+      ${report?.expensesList && report.expensesList.length > 0 ? `
+      <h3>Detailed Expenses (Shop / Vendor Details)</h3>
+      <table>
+        <tr>
+          <th>Date</th>
+          <th>Shop / Vendor</th>
+          <th>Category</th>
+          <th>Description</th>
+          <th>Amount (₹)</th>
+        </tr>
+        ${report.expensesList.map((e: any) => `
+          <tr>
+            <td>${new Date(e.date || Date.now()).toLocaleDateString()}</td>
+            <td><strong>${e.vendor || 'N/A'}</strong></td>
+            <td>${e.category || 'General'}</td>
+            <td>${e.description || '-'}</td>
+            <td>₹${(e.amount || 0).toLocaleString('en-IN')}</td>
+          </tr>
+        `).join('')}
+      </table>
+      ` : ''}
       <div class="signature">
         <div class="sig-box">Auditor Signature</div>
         <div class="sig-box">Committee President</div>
@@ -92,7 +148,7 @@ export const generateAuditReportPDF = async (committeeDetails: any, report: any)
     if (base64) {
       await writeAsStringAsync(newUri, base64, { encoding: EncodingType.Base64 });
     }
-    await Sharing.shareAsync(newUri, { UTI: '.pdf', mimeType: 'application/pdf', dialogTitle: 'Share Audit Report' });
+    await showDownloadSuccessAndShare(newUri, 'Audit Report PDF');
   } catch (error) {
     console.error('Failed to generate PDF:', error);
     throw error;
@@ -155,7 +211,7 @@ export const generateDonationReceiptPDF = async (committeeDetails: any, donation
     if (base64) {
       await writeAsStringAsync(newUri, base64, { encoding: EncodingType.Base64 });
     }
-    await Sharing.shareAsync(newUri, { UTI: '.pdf', mimeType: 'application/pdf', dialogTitle: 'Share Donation Receipt' });
+    await showDownloadSuccessAndShare(newUri, 'Donation Receipt PDF');
   } catch (error) {
     console.error('Failed to generate PDF:', error);
     throw error;

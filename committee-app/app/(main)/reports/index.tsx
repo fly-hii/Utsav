@@ -34,9 +34,15 @@ export default function CommitteeReportsScreen() {
     if (!committeeId) return;
     try {
       setLoading(true);
-      const res: any = await CommitteeManagementService.getDashboard(committeeId);
-      if (res?.data) {
-        const d = res.data;
+      const [dashboardRes, expensesRes]: any = await Promise.all([
+        CommitteeManagementService.getDashboard(committeeId),
+        CommitteeManagementService.getExpenses(committeeId)
+      ]);
+      
+      if (dashboardRes?.data) {
+        const d = dashboardRes.data;
+        const expenses = Array.isArray(expensesRes?.data) ? expensesRes.data : 
+                         (Array.isArray(expensesRes) ? expensesRes : []);
         setReport({
           totalDonations: d.total?.donations || 0,
           totalExpenses: d.total?.expenses || 0,
@@ -48,6 +54,7 @@ export default function CommitteeReportsScreen() {
             : [
                 { category: 'NO EXPENSES', amount: 0 },
               ],
+          expensesList: expenses
         });
       }
     } catch (err) {

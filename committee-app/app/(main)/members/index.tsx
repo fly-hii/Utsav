@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { COLORS, GRADIENTS } from '../../../constants/theme';
@@ -49,6 +49,10 @@ export default function MembersScreen() {
       Alert.alert('Validation Error', 'Please enter a valid 10-digit mobile number.');
       return;
     }
+    if (!committeeId) {
+      Alert.alert('Error', 'Committee data not loaded yet. Please wait and try again.');
+      return;
+    }
 
     try {
       setSubmitting(true);
@@ -81,12 +85,19 @@ export default function MembersScreen() {
         </View>
       </View>
 
-      <ScrollView
-        contentContainerStyle={[
-          styles.scrollContent,
-          { paddingBottom: 20, paddingTop: 10 },
-        ]}
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 20}
       >
+        <ScrollView
+          contentContainerStyle={[
+            styles.scrollContent,
+            { paddingBottom: 20, paddingTop: 10 },
+          ]}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
 
 
         {/* Add Member Card */}
@@ -153,6 +164,7 @@ export default function MembersScreen() {
           ))
         )}
       </ScrollView>
+      </KeyboardAvoidingView>
     </LinearGradient>
   );
 }

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator, Image } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator, Image, KeyboardAvoidingView, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { COLORS, GRADIENTS } from '../../constants/theme';
@@ -20,6 +20,11 @@ export default function CommitteeProfileScreen() {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [updatingPw, setUpdatingPw] = useState(false);
+  
+  // Password visibility toggles
+  const [showCurrentPw, setShowCurrentPw] = useState(false);
+  const [showNewPw, setShowNewPw] = useState(false);
+  const [showConfirmPw, setShowConfirmPw] = useState(false);
   
   const [upiId, setUpiId] = useState('');
   const [updatingUpi, setUpdatingUpi] = useState(false);
@@ -144,6 +149,36 @@ export default function CommitteeProfileScreen() {
     );
   };
 
+  const renderPasswordInput = (
+    value: string,
+    onChangeText: (text: string) => void,
+    placeholder: string,
+    showPassword: boolean,
+    toggleShowPassword: () => void
+  ) => (
+    <View style={styles.passwordContainer}>
+      <TextInput
+        value={value}
+        onChangeText={onChangeText}
+        placeholder={placeholder}
+        placeholderTextColor={COLORS.textMuted}
+        secureTextEntry={!showPassword}
+        style={styles.passwordInput}
+      />
+      <TouchableOpacity
+        onPress={toggleShowPassword}
+        style={styles.eyeBtn}
+        activeOpacity={0.7}
+      >
+        <Ionicons
+          name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+          size={18}
+          color={COLORS.textSecondary}
+        />
+      </TouchableOpacity>
+    </View>
+  );
+
   return (
     <LinearGradient colors={GRADIENTS.dark} style={styles.container}>
       {/* Navigation Header */}
@@ -159,162 +194,167 @@ export default function CommitteeProfileScreen() {
         </View>
       </View>
 
-      <ScrollView
-        contentContainerStyle={[
-          styles.scrollContent,
-          { paddingBottom: 20, paddingTop: 10 },
-        ]}
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 20}
       >
+        <ScrollView
+          contentContainerStyle={[
+            styles.scrollContent,
+            { paddingBottom: 40, paddingTop: 10 },
+          ]}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
 
 
-        {loading ? (
-          <ActivityIndicator color={COLORS.primaryOrange} style={{ marginVertical: 30 }} />
-        ) : (
-          <>
-            {/* Officer Info Card */}
-            <BlurView intensity={25} tint="dark" style={styles.profileCard}>
-              <View style={styles.avatarRow}>
-                <View style={styles.avatar}>
-                  <Text style={styles.avatarText}>{(user?.name || 'O')[0].toUpperCase()}</Text>
+          {loading ? (
+            <ActivityIndicator color={COLORS.primaryOrange} style={{ marginVertical: 30 }} />
+          ) : (
+            <>
+              {/* Officer Info Card */}
+              <BlurView intensity={25} tint="dark" style={styles.profileCard}>
+                <View style={styles.avatarRow}>
+                  <View style={styles.avatar}>
+                    <Text style={styles.avatarText}>{(user?.name || 'O')[0].toUpperCase()}</Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.userName}>{user?.name || 'Committee Officer'}</Text>
+                    <Text style={styles.userPhone}>📞 {user?.phone || 'Not set'}</Text>
+                    <Text style={styles.commTag}>🛕 Sri Rama Youth Committee</Text>
+                  </View>
+                  <View style={styles.roleBadge}>
+                    <Text style={styles.roleText}>{user?.role || 'COMMITTEE'}</Text>
+                  </View>
                 </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.userName}>{user?.name || 'Committee Officer'}</Text>
-                  <Text style={styles.userPhone}>📞 {user?.phone || 'Not set'}</Text>
-                  <Text style={styles.commTag}>🛕 Sri Rama Youth Committee</Text>
-                </View>
-                <View style={styles.roleBadge}>
-                  <Text style={styles.roleText}>{user?.role || 'COMMITTEE'}</Text>
-                </View>
-              </View>
-            </BlurView>
+              </BlurView>
 
-            {/* QR Code Upload Card */}
-            <BlurView intensity={20} tint="dark" style={styles.glassCard}>
-              <Text style={styles.cardHeader}>Online Donation QR Code 📱</Text>
-              <Text style={[styles.subtitle, { color: COLORS.textSecondary, marginBottom: 16, fontSize: 13 }]}>
-                Upload your PhonePe or Google Pay QR code. Users will scan this to make online donations.
-              </Text>
+              {/* QR Code Upload Card */}
+              <BlurView intensity={20} tint="dark" style={styles.glassCard}>
+                <Text style={styles.cardHeader}>Online Donation QR Code 📱</Text>
+                <Text style={[styles.subtitle, { color: COLORS.textSecondary, marginBottom: 16, fontSize: 13 }]}>
+                  Upload your PhonePe or Google Pay QR code. Users will scan this to make online donations.
+                </Text>
 
-              {user?.committeeMemberships?.[0]?.qrCodeS3Url ? (
-                <View style={{ alignItems: 'center', marginBottom: 16 }}>
-                  <Image source={{ uri: user.committeeMemberships[0].qrCodeS3Url }} style={{ width: 200, height: 200, borderRadius: 12, backgroundColor: '#FFF' }} resizeMode="contain" />
-                </View>
-              ) : (
-                <View style={{ alignItems: 'center', marginBottom: 16, padding: 20, borderWidth: 1, borderColor: COLORS.glassBorder, borderRadius: 12, borderStyle: 'dashed' }}>
-                  <Ionicons name="qr-code-outline" size={40} color={COLORS.textMuted} />
-                  <Text style={{ color: COLORS.textMuted, marginTop: 8 }}>No QR Code uploaded</Text>
-                </View>
-              )}
+                {user?.committeeMemberships?.[0]?.qrCodeS3Url ? (
+                  <View style={{ alignItems: 'center', marginBottom: 16 }}>
+                    <Image source={{ uri: user.committeeMemberships[0].qrCodeS3Url }} style={{ width: 200, height: 200, borderRadius: 12, backgroundColor: '#FFF' }} resizeMode="contain" />
+                  </View>
+                ) : (
+                  <View style={{ alignItems: 'center', marginBottom: 16, padding: 20, borderWidth: 1, borderColor: COLORS.glassBorder, borderRadius: 12, borderStyle: 'dashed' }}>
+                    <Ionicons name="qr-code-outline" size={40} color={COLORS.textMuted} />
+                    <Text style={{ color: COLORS.textMuted, marginTop: 8 }}>No QR Code uploaded</Text>
+                  </View>
+                )}
 
-              <TouchableOpacity style={styles.pwBtn} onPress={handleUploadQR} disabled={uploadingQR} activeOpacity={0.85}>
-                <LinearGradient colors={GRADIENTS.festival} style={styles.pwGradient}>
-                  {uploadingQR ? (
-                    <ActivityIndicator color="#FFF" />
-                  ) : (
-                    <>
-                      <Ionicons name="cloud-upload-outline" size={18} color="#FFF" style={{ marginRight: 6 }} />
-                      <Text style={styles.pwText}>{user?.committeeMemberships?.[0]?.qrCodeS3Url ? 'Update QR Code' : 'Upload QR Code'}</Text>
-                    </>
+                <TouchableOpacity style={styles.pwBtn} onPress={handleUploadQR} disabled={uploadingQR} activeOpacity={0.85}>
+                  <LinearGradient colors={GRADIENTS.festival} style={styles.pwGradient}>
+                    {uploadingQR ? (
+                      <ActivityIndicator color="#FFF" />
+                    ) : (
+                      <>
+                        <Ionicons name="cloud-upload-outline" size={18} color="#FFF" style={{ marginRight: 6 }} />
+                        <Text style={styles.pwText}>{user?.committeeMemberships?.[0]?.qrCodeS3Url ? 'Update QR Code' : 'Upload QR Code'}</Text>
+                      </>
+                    )}
+                  </LinearGradient>
+                </TouchableOpacity>
+              </BlurView>
+
+              {/* UPI ID Card */}
+              <BlurView intensity={20} tint="dark" style={styles.glassCard}>
+                <Text style={styles.cardHeader}>Direct UPI App Payment 🔗</Text>
+                <Text style={[styles.subtitle, { color: COLORS.textSecondary, marginBottom: 16, fontSize: 13 }]}>
+                  Configure your UPI ID so users can donate directly from their installed UPI apps (PhonePe, GPay).
+                </Text>
+
+                <View style={styles.group}>
+                  <Text style={styles.label}>Committee UPI ID</Text>
+                  <TextInput
+                    value={upiId}
+                    onChangeText={setUpiId}
+                    placeholder="e.g. sriramayouth@ybl"
+                    placeholderTextColor={COLORS.textMuted}
+                    style={styles.input}
+                    autoCapitalize="none"
+                  />
+                </View>
+
+                <TouchableOpacity style={styles.pwBtn} onPress={handleUpdateUpiId} disabled={updatingUpi} activeOpacity={0.85}>
+                  <LinearGradient colors={GRADIENTS.festival} style={styles.pwGradient}>
+                    {updatingUpi ? (
+                      <ActivityIndicator color="#FFF" />
+                    ) : (
+                      <>
+                        <Ionicons name="link-outline" size={18} color="#FFF" style={{ marginRight: 6 }} />
+                        <Text style={styles.pwText}>Update UPI ID</Text>
+                      </>
+                    )}
+                  </LinearGradient>
+                </TouchableOpacity>
+              </BlurView>
+
+              {/* Change Password Card */}
+              <BlurView intensity={20} tint="dark" style={styles.glassCard}>
+                <Text style={styles.cardHeader}>Change Officer Password 🔐</Text>
+
+                <View style={styles.group}>
+                  <Text style={styles.label}>Current Password *</Text>
+                  {renderPasswordInput(
+                    currentPassword,
+                    setCurrentPassword,
+                    'Enter current password',
+                    showCurrentPw,
+                    () => setShowCurrentPw(!showCurrentPw)
                   )}
-                </LinearGradient>
-              </TouchableOpacity>
-            </BlurView>
+                </View>
 
-            {/* UPI ID Card */}
-            <BlurView intensity={20} tint="dark" style={styles.glassCard}>
-              <Text style={styles.cardHeader}>Direct UPI App Payment 🔗</Text>
-              <Text style={[styles.subtitle, { color: COLORS.textSecondary, marginBottom: 16, fontSize: 13 }]}>
-                Configure your UPI ID so users can donate directly from their installed UPI apps (PhonePe, GPay).
-              </Text>
-
-              <View style={styles.group}>
-                <Text style={styles.label}>Committee UPI ID</Text>
-                <TextInput
-                  value={upiId}
-                  onChangeText={setUpiId}
-                  placeholder="e.g. sriramayouth@ybl"
-                  placeholderTextColor={COLORS.textMuted}
-                  style={styles.input}
-                  autoCapitalize="none"
-                />
-              </View>
-
-              <TouchableOpacity style={styles.pwBtn} onPress={handleUpdateUpiId} disabled={updatingUpi} activeOpacity={0.85}>
-                <LinearGradient colors={GRADIENTS.festival} style={styles.pwGradient}>
-                  {updatingUpi ? (
-                    <ActivityIndicator color="#FFF" />
-                  ) : (
-                    <>
-                      <Ionicons name="link-outline" size={18} color="#FFF" style={{ marginRight: 6 }} />
-                      <Text style={styles.pwText}>Update UPI ID</Text>
-                    </>
+                <View style={styles.group}>
+                  <Text style={styles.label}>New Password *</Text>
+                  {renderPasswordInput(
+                    newPassword,
+                    setNewPassword,
+                    'Enter minimum 6 characters',
+                    showNewPw,
+                    () => setShowNewPw(!showNewPw)
                   )}
-                </LinearGradient>
-              </TouchableOpacity>
-            </BlurView>
+                </View>
 
-            {/* Change Password Card */}
-            <BlurView intensity={20} tint="dark" style={styles.glassCard}>
-              <Text style={styles.cardHeader}>Change Officer Password 🔐</Text>
-
-              <View style={styles.group}>
-                <Text style={styles.label}>Current Password *</Text>
-                <TextInput
-                  value={currentPassword}
-                  onChangeText={setCurrentPassword}
-                  placeholder="Enter current password"
-                  placeholderTextColor={COLORS.textMuted}
-                  secureTextEntry
-                  style={styles.input}
-                />
-              </View>
-
-              <View style={styles.group}>
-                <Text style={styles.label}>New Password *</Text>
-                <TextInput
-                  value={newPassword}
-                  onChangeText={setNewPassword}
-                  placeholder="Enter minimum 6 characters"
-                  placeholderTextColor={COLORS.textMuted}
-                  secureTextEntry
-                  style={styles.input}
-                />
-              </View>
-
-              <View style={styles.group}>
-                <Text style={styles.label}>Confirm New Password *</Text>
-                <TextInput
-                  value={confirmPassword}
-                  onChangeText={setConfirmPassword}
-                  placeholder="Re-enter new password"
-                  placeholderTextColor={COLORS.textMuted}
-                  secureTextEntry
-                  style={styles.input}
-                />
-              </View>
-
-              <TouchableOpacity style={styles.pwBtn} onPress={handleChangePassword} disabled={updatingPw} activeOpacity={0.85}>
-                <LinearGradient colors={GRADIENTS.festival} style={styles.pwGradient}>
-                  {updatingPw ? (
-                    <ActivityIndicator color="#FFF" />
-                  ) : (
-                    <>
-                      <Ionicons name="key-outline" size={18} color="#FFF" style={{ marginRight: 6 }} />
-                      <Text style={styles.pwText}>Update Officer Password</Text>
-                    </>
+                <View style={styles.group}>
+                  <Text style={styles.label}>Confirm New Password *</Text>
+                  {renderPasswordInput(
+                    confirmPassword,
+                    setConfirmPassword,
+                    'Re-enter new password',
+                    showConfirmPw,
+                    () => setShowConfirmPw(!showConfirmPw)
                   )}
-                </LinearGradient>
-              </TouchableOpacity>
-            </BlurView>
+                </View>
 
-            {/* Logout Action Button */}
-            <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout} activeOpacity={0.85}>
-              <Ionicons name="log-out-outline" size={20} color={COLORS.error} style={{ marginRight: 8 }} />
-              <Text style={styles.logoutText}>Logout Officer Account</Text>
-            </TouchableOpacity>
-          </>
-        )}
-      </ScrollView>
+                <TouchableOpacity style={styles.pwBtn} onPress={handleChangePassword} disabled={updatingPw} activeOpacity={0.85}>
+                  <LinearGradient colors={GRADIENTS.festival} style={styles.pwGradient}>
+                    {updatingPw ? (
+                      <ActivityIndicator color="#FFF" />
+                    ) : (
+                      <>
+                        <Ionicons name="key-outline" size={18} color="#FFF" style={{ marginRight: 6 }} />
+                        <Text style={styles.pwText}>Update Officer Password</Text>
+                      </>
+                    )}
+                  </LinearGradient>
+                </TouchableOpacity>
+              </BlurView>
+
+              {/* Logout Action Button */}
+              <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout} activeOpacity={0.85}>
+                <Ionicons name="log-out-outline" size={20} color={COLORS.error} style={{ marginRight: 8 }} />
+                <Text style={styles.logoutText}>Logout Officer Account</Text>
+              </TouchableOpacity>
+            </>
+          )}
+        </ScrollView>
+      </KeyboardAvoidingView>
     </LinearGradient>
   );
 }
@@ -340,6 +380,26 @@ const styles = StyleSheet.create({
   group: { marginBottom: 14 },
   label: { fontSize: 11, fontWeight: '700', color: COLORS.textSecondary, marginBottom: 6 },
   input: { backgroundColor: 'rgba(255, 255, 255, 0.08)', borderRadius: 12, padding: 14, color: COLORS.textPrimary, borderWidth: 1, borderColor: COLORS.glassBorder },
+  passwordContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderWidth: 1,
+    borderColor: COLORS.glassBorder,
+    borderRadius: 12,
+  },
+  passwordInput: {
+    flex: 1,
+    padding: 14,
+    color: COLORS.textPrimary,
+    fontSize: 14,
+  },
+  eyeBtn: {
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   pwBtn: { marginTop: 8, borderRadius: 14, overflow: 'hidden' },
   pwGradient: { paddingVertical: 14, flexDirection: 'row', justifyContent: 'center', alignItems: 'center' },
   pwText: { color: COLORS.textPrimary, fontWeight: '800', fontSize: 14 },

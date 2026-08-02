@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { COLORS, GRADIENTS } from '../../constants/theme';
 import { CommitteeAuthService } from '../../services/api';
+import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 
 export default function CommitteeRegisterScreen() {
@@ -23,6 +24,7 @@ export default function CommitteeRegisterScreen() {
   const [coords, setCoords] = useState<{ latitude: number; longitude: number } | null>(null);
   const [gpsStatus, setGpsStatus] = useState('Detecting GPS location...');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     async function captureTempleGps() {
@@ -100,7 +102,16 @@ export default function CommitteeRegisterScreen() {
 
   return (
     <LinearGradient colors={GRADIENTS.dark} style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+      >
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.header}>
           <Text style={styles.title}>Register Village Committee 🛕</Text>
           <Text style={styles.subtitle}>Automatic GPS location detection & document verification</Text>
@@ -166,7 +177,27 @@ export default function CommitteeRegisterScreen() {
 
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Account Password *</Text>
-            <TextInput value={password} onChangeText={setPassword} placeholder="Create secure password" placeholderTextColor={COLORS.textMuted} secureTextEntry style={styles.input} />
+            <View style={styles.passwordContainer}>
+              <TextInput
+                value={password}
+                onChangeText={setPassword}
+                placeholder="Create secure password"
+                placeholderTextColor={COLORS.textMuted}
+                secureTextEntry={!showPassword}
+                style={styles.passwordInput}
+              />
+              <TouchableOpacity
+                onPress={() => setShowPassword(!showPassword)}
+                style={styles.eyeBtn}
+                activeOpacity={0.7}
+              >
+                <Ionicons
+                  name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                  size={20}
+                  color={COLORS.textSecondary}
+                />
+              </TouchableOpacity>
+            </View>
           </View>
 
           <TouchableOpacity style={styles.submitBtn} onPress={handleRegisterSubmit} disabled={loading} activeOpacity={0.85}>
@@ -180,6 +211,7 @@ export default function CommitteeRegisterScreen() {
           </TouchableOpacity>
         </BlurView>
       </ScrollView>
+      </KeyboardAvoidingView>
     </LinearGradient>
   );
 }
@@ -200,4 +232,24 @@ const styles = StyleSheet.create({
   submitBtn: { marginTop: 12, borderRadius: 14, overflow: 'hidden' },
   submitGradient: { paddingVertical: 16, alignItems: 'center' },
   submitText: { color: COLORS.textPrimary, fontWeight: '800', fontSize: 14 },
+  passwordContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderWidth: 1,
+    borderColor: COLORS.glassBorder,
+    borderRadius: 12,
+  },
+  passwordInput: {
+    flex: 1,
+    padding: 12,
+    color: COLORS.textPrimary,
+    fontSize: 13,
+  },
+  eyeBtn: {
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
 });

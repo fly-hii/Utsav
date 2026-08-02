@@ -2,6 +2,7 @@ import express, { Express } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
+import rateLimit from 'express-rate-limit';
 import { env } from './config/env';
 import { errorHandler } from './middleware/errorHandler';
 
@@ -34,13 +35,32 @@ export function createApp(): Express {
   app.use(express.json({ limit: '50mb' }));
   app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
+  // Global Rate Limiting
+  const globalLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 500, // limit each IP to 500 requests per windowMs
+    message: { success: false, message: 'Too many requests from this IP, please try again after 15 minutes' },
+    standardHeaders: true,
+    legacyHeaders: false,
+  });
+  app.use('/api', globalLimiter);
+
+  // Stricter Rate Limiting for Auth
+  const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 30, // limit each IP to 30 requests per windowMs for auth routes
+    message: { success: false, message: 'Too many login attempts, please try again later' },
+    standardHeaders: true,
+    legacyHeaders: false,
+  });
+
   // Health Check
   app.get(['/health', '/api/health'], (_req, res) => {
     res.status(200).json({ status: 'OK', message: 'Utsav API is running smoothly 🎪', timestamp: new Date() });
   });
 
   // API Routes
-  app.use(['/api/auth', '/auth'], authRoutes);
+  app.use(['/api/auth', '/auth'], authLimiter, authRoutes);
   app.use(['/api/committees', '/committees'], committeeRoutes);
 
   // Nested Committee Sub-resources

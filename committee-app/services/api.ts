@@ -30,10 +30,10 @@ export const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 10000,
+  timeout: 30000,
 });
 
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 
 let authToken: string | null = null;
 let refreshTokenStr: string | null = null;
@@ -46,19 +46,19 @@ export const setAuthToken = async (token: string | null, refreshToken?: string |
 
   if (token) {
     api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-    await AsyncStorage.setItem('authToken', token).catch(() => { });
-    if (refreshToken) await AsyncStorage.setItem('refreshToken', refreshToken).catch(() => { });
+    await SecureStore.setItemAsync('authToken', token).catch(() => { });
+    if (refreshToken) await SecureStore.setItemAsync('refreshToken', refreshToken).catch(() => { });
   } else {
     delete api.defaults.headers.common['Authorization'];
-    await AsyncStorage.removeItem('authToken').catch(() => { });
-    await AsyncStorage.removeItem('refreshToken').catch(() => { });
+    await SecureStore.deleteItemAsync('authToken').catch(() => { });
+    await SecureStore.deleteItemAsync('refreshToken').catch(() => { });
   }
 };
 
 export const initializeAuth = async () => {
   try {
-    const token = await AsyncStorage.getItem('authToken');
-    const refresh = await AsyncStorage.getItem('refreshToken');
+    const token = await SecureStore.getItemAsync('authToken');
+    const refresh = await SecureStore.getItemAsync('refreshToken');
     if (token) {
       authToken = token;
       refreshTokenStr = refresh;
@@ -88,7 +88,7 @@ api.interceptors.response.use(
     if (error.response?.status === 401 && !originalRequest._retry && originalRequest.url !== '/auth/refresh') {
       originalRequest._retry = true;
       try {
-        const storedRefresh = await AsyncStorage.getItem('refreshToken');
+        const storedRefresh = await SecureStore.getItemAsync('refreshToken');
         if (storedRefresh) {
           const res = await axios.post(`${API_BASE_URL}/auth/refresh`, { refreshToken: storedRefresh });
           if (res.data?.data?.accessToken) {
