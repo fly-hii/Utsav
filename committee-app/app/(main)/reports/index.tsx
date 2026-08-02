@@ -16,7 +16,15 @@ export default function CommitteeReportsScreen() {
   const { committeeId, committeeDetails } = useCommittee();
   const [loading, setLoading] = useState(true);
 
-  const [report, setReport] = useState({
+  const [report, setReport] = useState<{
+    totalDonations: number;
+    totalExpenses: number;
+    netBalance: number;
+    donationsCount: number;
+    expensesCount: number;
+    categories: { category: string; amount: number }[];
+    expensesList: any[];
+  }>({
     totalDonations: 0,
     totalExpenses: 0,
     netBalance: 0,
@@ -28,6 +36,7 @@ export default function CommitteeReportsScreen() {
       { category: 'LIGHTING & SOUND', amount: 0 },
       { category: 'PRIEST & RITUALS', amount: 0 },
     ],
+    expensesList: [],
   });
 
   const fetchReport = async () => {
