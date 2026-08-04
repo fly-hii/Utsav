@@ -106,6 +106,44 @@ export class AuthController {
       sendError(res, error.message, error.statusCode || 500);
     }
   }
+  /**
+   * POST /api/auth/send-otp
+   */
+  async sendOtp(req: Request, res: Response): Promise<void> {
+    try {
+      const { phone, purpose } = req.body;
+      await authService.sendOtp(phone, purpose);
+      sendSuccess(res, null, 'OTP sent successfully');
+    } catch (error: any) {
+      sendError(res, error.message, error.statusCode || 500);
+    }
+  }
+
+  /**
+   * POST /api/auth/login-with-otp
+   */
+  async loginWithOtp(req: Request, res: Response): Promise<void> {
+    try {
+      const { phone, otp } = req.body;
+      const result = await authService.loginWithOtp(phone, otp);
+      sendSuccess(res, result, 'Login successful');
+    } catch (error: any) {
+      sendError(res, error.message, error.statusCode || 500);
+    }
+  }
+
+  /**
+   * POST /api/auth/reset-password-with-otp
+   */
+  async resetPasswordWithOtp(req: Request, res: Response): Promise<void> {
+    try {
+      const { phone, otp, newPassword } = req.body;
+      await authService.resetPasswordWithOtp(phone, otp, newPassword);
+      sendSuccess(res, null, 'Password reset successfully');
+    } catch (error: any) {
+      sendError(res, error.message, error.statusCode || 500);
+    }
+  }
 }
 
 export const authController = new AuthController();

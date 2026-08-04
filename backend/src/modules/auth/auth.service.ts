@@ -33,6 +33,8 @@ interface AuthTokens {
   };
 }
 
+export type OtpPurpose = 'LOGIN' | 'FORGOT_PASSWORD' | 'REGISTER';
+
 export class AuthService {
   /**
    * Register a new user
@@ -107,6 +109,10 @@ export class AuthService {
       throw { statusCode: 401, message: 'Invalid phone number or password' };
     }
 
+    if (user.avatar) {
+      try { user.avatarUrl = await getPresignedUrl(user.avatar, 604800); } catch (e) {}
+    }
+
     const tokens = await this.generateTokens(user.id, user.role);
 
     return {
@@ -169,6 +175,10 @@ export class AuthService {
 
     if (!user) {
       throw { statusCode: 404, message: 'User not found' };
+    }
+
+    if (user.avatar) {
+      try { user.avatarUrl = await getPresignedUrl(user.avatar, 604800); } catch (e) {}
     }
 
     const memberships = await query(
@@ -263,6 +273,124 @@ export class AuthService {
       `UPDATE users SET push_token = ? WHERE id = ?`,
       [token, userId]
     );
+  }
+
+  /**
+   * Send OTP via SMS
+   */
+  async sendOtp(phone: string, purpose: OtpPurpose): Promise<void> {
+    // Check if user exists (only required for LOGIN and FORGOT_PASSWORD)
+    if (purpose === 'LOGIN' || purpose === 'FORGOT_PASSWORD') {
+      const user: any = await queryOne('SELECT id, isActive FROM users WHERE phone = ?', [phone]);
+      if (!user) {
+        throw { statusCode: 404, message: 'User not found' };
+      }
+      if (!user.isActive) {
+        throw { statusCode: 403, message: 'Account is deactivated' };
+      }
+    }
+
+    // Rate limit check: wait at least 1 minute before sending another OTP
+    const recentOtp: any = await queryOne(
+      'SELECT id, createdAt FROM otps WHERE phone = ? AND purpose = ? ORDER BY createdAt DESC LIMIT 1',
+      [phone, purpose]
+    );
+
+    if (recentOtp && new Date().getTime() - new Date(recentOtp.createdAt).getTime() < 60000) {
+      throw { statusCode: 429, message: 'Please wait before requesting a new OTP' };
+    }
+
+    // Generate 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = new Date();
+    expiresAt.setMinutes(expiresAt.getMinutes() + 10); // 10 minutes expiry
+
+    // Delete older OTPs for this phone/purpose to keep DB clean
+    await query('DELETE FROM otps WHERE phone = ? AND purpose = ?', [phone, purpose]);
+
+    const id = uuidv4();
+    await query(
+      'INSERT INTO otps (id, phone, otp, purpose, expiresAt) VALUES (?, ?, ?, ?, ?)',
+      [id, phone, otp, purpose, expiresAt]
+    );
+
+    // Use the SMS Service to send OTP (handles mock & real providers)
+    const { SMSService } = require('../../services/sms.service');
+    await SMSService.sendOTP(phone, otp);
+  }
+
+  /**
+   * Login with OTP (Passwordless)
+   */
+  async loginWithOtp(phone: string, otp: string): Promise<AuthTokens> {
+    const user: any = await queryOne('SELECT * FROM users WHERE phone = ?', [phone]);
+
+    if (!user) {
+      throw { statusCode: 404, message: 'User not found' };
+    }
+
+    if (!user.isActive) {
+      throw { statusCode: 403, message: 'Account is deactivated' };
+    }
+
+    // Validate OTP
+    const validOtp: any = await queryOne(
+      'SELECT id FROM otps WHERE phone = ? AND otp = ? AND purpose = ? AND isUsed = FALSE AND expiresAt > NOW()',
+      [phone, otp, 'LOGIN']
+    );
+
+    if (!validOtp) {
+      throw { statusCode: 400, message: 'Invalid or expired OTP' };
+    }
+
+    // Mark OTP as used
+    await query('UPDATE otps SET isUsed = TRUE WHERE id = ?', [validOtp.id]);
+
+    if (user.avatar) {
+      try { user.avatarUrl = await getPresignedUrl(user.avatar, 604800); } catch (e) {}
+    }
+
+    const tokens = await this.generateTokens(user.id, user.role);
+
+    return {
+      ...tokens,
+      user: {
+        id: user.id,
+        name: user.name,
+        phone: user.phone,
+        email: user.email,
+        role: user.role,
+        avatar: user.avatar,
+        avatarUrl: user.avatarUrl,
+      },
+    };
+  }
+
+  /**
+   * Reset password with OTP
+   */
+  async resetPasswordWithOtp(phone: string, otp: string, newPassword: string): Promise<void> {
+    const user: any = await queryOne('SELECT id FROM users WHERE phone = ?', [phone]);
+    if (!user) {
+      throw { statusCode: 404, message: 'User not found' };
+    }
+
+    // Validate OTP
+    const validOtp: any = await queryOne(
+      'SELECT id FROM otps WHERE phone = ? AND otp = ? AND purpose = ? AND isUsed = FALSE AND expiresAt > NOW()',
+      [phone, otp, 'FORGOT_PASSWORD']
+    );
+
+    if (!validOtp) {
+      throw { statusCode: 400, message: 'Invalid or expired OTP' };
+    }
+
+    // Mark OTP as used
+    await query('UPDATE otps SET isUsed = TRUE WHERE id = ?', [validOtp.id]);
+
+    const hashedPassword = await hashPassword(newPassword);
+    await query('UPDATE users SET password = ? WHERE id = ?', [hashedPassword, user.id]);
+    await query('DELETE FROM refresh_tokens WHERE userId = ?', [user.id]);
   }
 }
 

@@ -7,11 +7,13 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import { AuthService } from '../../services/api';
-import { COLORS, GRADIENTS } from '../../constants/theme';
+import { GRADIENTS } from '../../constants/theme';
+import { useAppTheme } from '../../context/ThemeContext';
 
 export default function UserProfileScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { colors, isDark, theme, setTheme } = useAppTheme();
 
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -124,17 +126,24 @@ export default function UserProfileScreen() {
     );
   };
 
+  const toggleTheme = () => {
+    setTheme(isDark ? 'light' : 'dark');
+  };
+
   return (
-    <LinearGradient colors={GRADIENTS.dark} style={styles.container}>
+    <LinearGradient colors={isDark ? GRADIENTS.dark : GRADIENTS.lightDark} style={styles.container}>
       {/* Header */}
       <View style={{ paddingTop: insets.top + 16, paddingHorizontal: 20, paddingBottom: 10 }}>
         <View style={styles.headerRow}>
-          <TouchableOpacity style={styles.backBtn} onPress={() => router.back()} activeOpacity={0.8}>
-            <Ionicons name="arrow-back" size={22} color="#FFF" />
+          <TouchableOpacity style={[styles.backBtn, { borderColor: colors.glassBorder, backgroundColor: colors.glassCard }]} onPress={() => router.back()} activeOpacity={0.8}>
+            <Ionicons name="arrow-back" size={22} color={colors.textPrimary} />
           </TouchableOpacity>
           <View style={{ flex: 1 }}>
-            <Text style={styles.title}>My Account Profile 👤</Text>
-            <Text style={styles.subtitle}>Account settings, security & password management</Text>
+            <Text style={[styles.title, { color: colors.textPrimary }]}>My Account Profile 👤</Text>
+            <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Account settings, security & password management</Text>
+          </View>
+          <View style={{ justifyContent: 'center', marginLeft: 10 }}>
+            <Image source={require('../../assets/icon.png')} style={{ width: 40, height: 40, borderRadius: 10, resizeMode: 'cover' }} />
           </View>
         </View>
       </View>
@@ -154,73 +163,101 @@ export default function UserProfileScreen() {
 
 
         {loading ? (
-          <ActivityIndicator color={COLORS.primaryOrange} style={{ marginVertical: 30 }} />
+          <ActivityIndicator color={colors.primaryOrange} style={{ marginVertical: 30 }} />
         ) : (
           <>
             {/* Profile Info Card */}
-            <BlurView intensity={25} tint="dark" style={styles.profileCard}>
-              <TouchableOpacity style={styles.editProfileBtn} onPress={openEditModal} activeOpacity={0.8}>
-                <Ionicons name="pencil" size={16} color={COLORS.textPrimary} />
+            <BlurView intensity={isDark ? 25 : 40} tint={isDark ? "dark" : "light"} style={[styles.profileCard, { backgroundColor: colors.glassCard, borderColor: colors.glassBorder }]}>
+              <TouchableOpacity style={[styles.editProfileBtn, { backgroundColor: colors.glassCard, borderColor: colors.glassBorder }]} onPress={openEditModal} activeOpacity={0.8}>
+                <Ionicons name="pencil" size={16} color={colors.textPrimary} />
               </TouchableOpacity>
               <View style={styles.avatarRow}>
-                <View style={styles.avatar}>
+                <View style={[styles.avatar, { backgroundColor: `${colors.gold}33`, borderColor: `${colors.gold}66` }]}>
                   {user?.avatarUrl ? (
                     <Image source={{ uri: user.avatarUrl }} style={{ width: 70, height: 70, borderRadius: 35 }} />
                   ) : (
-                    <Text style={styles.avatarText}>{(user?.name || 'U')[0].toUpperCase()}</Text>
+                    <Text style={[styles.avatarText, { color: colors.gold }]}>{(user?.name || 'U')[0].toUpperCase()}</Text>
                   )}
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.userName}>{user?.name || 'Villager Account'}</Text>
-                  <Text style={styles.userPhone}>📞 {user?.phone || 'Not set'}</Text>
-                  {user?.email && <Text style={styles.userEmail}>✉️ {user.email}</Text>}
+                  <Text style={[styles.userName, { color: colors.gold }]}>{user?.name || 'Villager Account'}</Text>
+                  <Text style={[styles.userPhone, { color: colors.textPrimary }]}>📞 {user?.phone || 'Not set'}</Text>
+                  {user?.email && <Text style={[styles.userEmail, { color: colors.textSecondary }]}>✉️ {user.email}</Text>}
                 </View>
-                <View style={styles.roleBadge}>
-                  <Text style={styles.roleText}>{user?.role || 'USER'}</Text>
+                <View style={[styles.roleBadge, { backgroundColor: `${colors.success}33`, borderColor: `${colors.success}66` }]}>
+                  <Text style={[styles.roleText, { color: colors.success }]}>{user?.role || 'USER'}</Text>
                 </View>
               </View>
             </BlurView>
 
+            {/* Theme Settings Card */}
+            <BlurView intensity={isDark ? 20 : 40} tint={isDark ? "dark" : "light"} style={[styles.sectionCard, { backgroundColor: colors.glassCard, borderColor: colors.glassBorder }]}>
+              <View style={[styles.sectionTitleRow, { borderBottomColor: colors.glassBorder }]}>
+                <Ionicons name="color-palette" size={18} color={colors.textPrimary} />
+                <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>App Theme</Text>
+              </View>
+              
+              <View style={{ flexDirection: 'row', gap: 12 }}>
+                <TouchableOpacity 
+                  style={[styles.themeOption, theme === 'dark' && [styles.themeOptionActive, { borderColor: colors.primaryOrange, backgroundColor: `${colors.primaryOrange}1A` }], { borderColor: colors.glassBorder, backgroundColor: colors.background }]} 
+                  onPress={() => setTheme('dark')}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="moon" size={24} color={theme === 'dark' ? colors.primaryOrange : colors.textSecondary} />
+                  <Text style={[styles.themeOptionText, theme === 'dark' ? { color: colors.primaryOrange } : { color: colors.textSecondary }]}>Dark Mode</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity 
+                  style={[styles.themeOption, theme === 'light' && [styles.themeOptionActive, { borderColor: colors.primaryOrange, backgroundColor: `${colors.primaryOrange}1A` }], { borderColor: colors.glassBorder, backgroundColor: colors.background }]} 
+                  onPress={() => setTheme('light')}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="sunny" size={24} color={theme === 'light' ? colors.primaryOrange : colors.textSecondary} />
+                  <Text style={[styles.themeOptionText, theme === 'light' ? { color: colors.primaryOrange } : { color: colors.textSecondary }]}>Light Mode</Text>
+                </TouchableOpacity>
+              </View>
+            </BlurView>
+
             {/* Change Password Card */}
-            <BlurView intensity={20} tint="dark" style={styles.sectionCard}>
-              <View style={styles.sectionTitleRow}>
-                <Ionicons name="lock-closed" size={18} color={COLORS.textPrimary} />
-                <Text style={styles.sectionTitle}>Change Account Password</Text>
+            <BlurView intensity={isDark ? 20 : 40} tint={isDark ? "dark" : "light"} style={[styles.sectionCard, { backgroundColor: colors.glassCard, borderColor: colors.glassBorder }]}>
+              <View style={[styles.sectionTitleRow, { borderBottomColor: colors.glassBorder }]}>
+                <Ionicons name="lock-closed" size={18} color={colors.textPrimary} />
+                <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Change Account Password</Text>
               </View>
 
               <View style={styles.group}>
-                <Text style={styles.label}>Current Password *</Text>
+                <Text style={[styles.label, { color: colors.textSecondary }]}>Current Password *</Text>
                 <TextInput
                   value={currentPassword}
                   onChangeText={setCurrentPassword}
                   placeholder="Enter current password"
-                  placeholderTextColor={COLORS.textSecondary}
+                  placeholderTextColor={colors.textSecondary}
                   secureTextEntry
-                  style={styles.input}
+                  style={[styles.input, { backgroundColor: colors.glassCard, borderColor: colors.glassBorder, color: colors.textPrimary }]}
                 />
               </View>
 
               <View style={styles.group}>
-                <Text style={styles.label}>New Password *</Text>
+                <Text style={[styles.label, { color: colors.textSecondary }]}>New Password *</Text>
                 <TextInput
                   value={newPassword}
                   onChangeText={setNewPassword}
                   placeholder="Enter new strong password"
-                  placeholderTextColor={COLORS.textSecondary}
+                  placeholderTextColor={colors.textSecondary}
                   secureTextEntry
-                  style={styles.input}
+                  style={[styles.input, { backgroundColor: colors.glassCard, borderColor: colors.glassBorder, color: colors.textPrimary }]}
                 />
               </View>
 
               <View style={styles.group}>
-                <Text style={styles.label}>Confirm New Password *</Text>
+                <Text style={[styles.label, { color: colors.textSecondary }]}>Confirm New Password *</Text>
                 <TextInput
                   value={confirmPassword}
                   onChangeText={setConfirmPassword}
                   placeholder="Retype new password"
-                  placeholderTextColor={COLORS.textSecondary}
+                  placeholderTextColor={colors.textSecondary}
                   secureTextEntry
-                  style={styles.input}
+                  style={[styles.input, { backgroundColor: colors.glassCard, borderColor: colors.glassBorder, color: colors.textPrimary }]}
                 />
               </View>
 
@@ -231,7 +268,7 @@ export default function UserProfileScreen() {
                   ) : (
                     <>
                       <Ionicons name="key-outline" size={18} color="#FFF" style={{ marginRight: 6 }} />
-                      <Text style={styles.submitText}>Update Password</Text>
+                      <Text style={[styles.submitText, { color: '#FFF' }]}>Update Password</Text>
                     </>
                   )}
                 </LinearGradient>
@@ -239,9 +276,9 @@ export default function UserProfileScreen() {
             </BlurView>
 
             {/* Logout Action Button */}
-            <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout} activeOpacity={0.8}>
-              <Ionicons name="log-out-outline" size={20} color={COLORS.error} style={{ marginRight: 8 }} />
-              <Text style={styles.logoutText}>Log Out Account</Text>
+            <TouchableOpacity style={[styles.logoutBtn, { backgroundColor: colors.glassCard, borderColor: `${colors.error}4D` }]} onPress={handleLogout} activeOpacity={0.8}>
+              <Ionicons name="log-out-outline" size={20} color={colors.error} style={{ marginRight: 8 }} />
+              <Text style={[styles.logoutText, { color: colors.error }]}>Log Out Account</Text>
             </TouchableOpacity>
           </>
         )}
@@ -251,11 +288,11 @@ export default function UserProfileScreen() {
       {/* Edit Profile Modal */}
       <Modal visible={editModalVisible} transparent animationType="slide">
         <View style={styles.modalOverlay}>
-          <BlurView intensity={40} tint="dark" style={styles.modalContainer}>
+          <BlurView intensity={isDark ? 40 : 80} tint={isDark ? "dark" : "light"} style={[styles.modalContainer, { backgroundColor: colors.background, borderColor: colors.glassBorder }]}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Edit Profile</Text>
-              <TouchableOpacity onPress={() => setEditModalVisible(false)} style={styles.modalCloseBtn}>
-                <Ionicons name="close" size={24} color={COLORS.textPrimary} />
+              <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>Edit Profile</Text>
+              <TouchableOpacity onPress={() => setEditModalVisible(false)} style={[styles.modalCloseBtn, { backgroundColor: colors.glassCard }]}>
+                <Ionicons name="close" size={24} color={colors.textPrimary} />
               </TouchableOpacity>
             </View>
 
@@ -265,23 +302,23 @@ export default function UserProfileScreen() {
               ) : user?.avatarUrl ? (
                 <Image source={{ uri: user.avatarUrl }} style={styles.editAvatarImage} />
               ) : (
-                <View style={styles.editAvatarPlaceholder}>
-                  <Ionicons name="camera" size={32} color={COLORS.textPrimary} />
+                <View style={[styles.editAvatarPlaceholder, { backgroundColor: colors.glassCard, borderColor: colors.glassBorder }]}>
+                  <Ionicons name="camera" size={32} color={colors.textPrimary} />
                 </View>
               )}
-              <View style={styles.editAvatarBadge}>
+              <View style={[styles.editAvatarBadge, { backgroundColor: colors.primaryOrange, borderColor: colors.background }]}>
                 <Ionicons name="pencil" size={12} color="#FFF" />
               </View>
             </TouchableOpacity>
 
             <View style={styles.group}>
-              <Text style={styles.label}>Full Name *</Text>
+              <Text style={[styles.label, { color: colors.textSecondary }]}>Full Name *</Text>
               <TextInput
                 value={editName}
                 onChangeText={setEditName}
                 placeholder="Enter your name"
-                placeholderTextColor={COLORS.textSecondary}
-                style={styles.input}
+                placeholderTextColor={colors.textSecondary}
+                style={[styles.input, { backgroundColor: colors.glassCard, borderColor: colors.glassBorder, color: colors.textPrimary }]}
               />
             </View>
 
@@ -290,7 +327,7 @@ export default function UserProfileScreen() {
                 {updatingProfile ? (
                   <ActivityIndicator color="#FFF" />
                 ) : (
-                  <Text style={styles.submitText}>Save Changes</Text>
+                  <Text style={[styles.submitText, { color: '#FFF' }]}>Save Changes</Text>
                 )}
               </LinearGradient>
             </TouchableOpacity>
@@ -305,45 +342,48 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   scrollContent: { padding: 20 },
   headerRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 24 },
-  backBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: COLORS.glassCard, justifyContent: 'center', alignItems: 'center', marginRight: 12, borderWidth: 1, borderColor: COLORS.glassBorder },
-  title: { fontSize: 20, fontWeight: '800', color: COLORS.textPrimary },
-  subtitle: { fontSize: 12, color: COLORS.textSecondary, marginTop: 4 },
+  backBtn: { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center', borderWidth: 1 },
+  title: { fontSize: 20, fontWeight: '800' },
+  subtitle: { fontSize: 12, marginTop: 4 },
 
-  profileCard: { borderRadius: 20, padding: 20, borderWidth: 1, borderColor: COLORS.glassBorder, backgroundColor: COLORS.glassCard, marginBottom: 24, alignItems: 'center' },
+  profileCard: { borderRadius: 20, padding: 20, borderWidth: 1, marginBottom: 24, alignItems: 'center' },
   avatarRow: { flexDirection: 'row', alignItems: 'center', gap: 14, width: '100%' },
   avatar: { width: 60, height: 60, borderRadius: 30, backgroundColor: 'rgba(251, 191, 36, 0.2)', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: 'rgba(251, 191, 36, 0.4)' },
-  avatarText: { fontSize: 24, fontWeight: '800', color: COLORS.gold },
-  userName: { fontSize: 18, fontWeight: '800', color: COLORS.gold, marginBottom: 4 },
-  userPhone: { fontSize: 13, color: COLORS.textPrimary, fontWeight: '700', marginBottom: 2 },
-  userEmail: { fontSize: 12, color: COLORS.textSecondary },
-  roleBadge: { backgroundColor: 'rgba(16, 185, 129, 0.2)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, borderWidth: 1, borderColor: 'rgba(16, 185, 129, 0.4)' },
-  roleText: { fontSize: 10, fontWeight: '800', color: COLORS.success, letterSpacing: 1 },
+  avatarText: { fontSize: 24, fontWeight: '800' },
+  userName: { fontSize: 18, fontWeight: '800', marginBottom: 4 },
+  userPhone: { fontSize: 13, fontWeight: '700', marginBottom: 2 },
+  userEmail: { fontSize: 12 },
+  roleBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, borderWidth: 1 },
+  roleText: { fontSize: 10, fontWeight: '800', letterSpacing: 1 },
 
-  sectionCard: { borderRadius: 20, padding: 20, borderWidth: 1, borderColor: COLORS.glassBorder, backgroundColor: COLORS.glassCard, marginBottom: 24 },
-  sectionTitleRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 16, borderBottomWidth: 1, borderBottomColor: COLORS.glassBorder, paddingBottom: 12 },
-  sectionTitle: { fontSize: 15, fontWeight: '800', color: COLORS.textPrimary, marginLeft: 8 },
+  sectionCard: { borderRadius: 20, padding: 20, borderWidth: 1, marginBottom: 24 },
+  sectionTitleRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 16, borderBottomWidth: 1, paddingBottom: 12 },
+  sectionTitle: { fontSize: 15, fontWeight: '800', marginLeft: 8 },
 
   group: { marginBottom: 16 },
-  label: { fontSize: 12, fontWeight: '700', color: COLORS.textSecondary, marginBottom: 8 },
-  input: { backgroundColor: COLORS.glassCard, borderRadius: 12, padding: 14, color: COLORS.textPrimary, borderWidth: 1, borderColor: COLORS.glassBorder },
+  label: { fontSize: 12, fontWeight: '700', marginBottom: 8 },
+  input: { borderRadius: 12, padding: 14, borderWidth: 1 },
 
   submitBtn: { marginTop: 8, borderRadius: 14, overflow: 'hidden' },
   submitGradient: { paddingVertical: 16, flexDirection: 'row', justifyContent: 'center', alignItems: 'center' },
-  submitText: { color: COLORS.textPrimary, fontWeight: '800', fontSize: 15 },
-  logoutBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.glassCard, paddingVertical: 14, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(239, 71, 111, 0.3)' },
-  logoutText: { color: COLORS.error, fontSize: 14, fontWeight: '700' },
+  submitText: { fontWeight: '800', fontSize: 15 },
+  logoutBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 14, borderRadius: 12, borderWidth: 1 },
+  logoutText: { fontSize: 14, fontWeight: '700' },
+
+  // Theme Select Styles
+  themeOption: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 16, borderRadius: 12, borderWidth: 1 },
+  themeOptionActive: { borderWidth: 1 },
+  themeOptionText: { fontSize: 12, fontWeight: '700', marginTop: 8 },
 
   // Edit Profile Styles
-  editProfileBtn: { position: 'absolute', top: 16, right: 16, width: 32, height: 32, borderRadius: 16, backgroundColor: COLORS.glassCard, borderWidth: 1, borderColor: COLORS.glassBorder, justifyContent: 'center', alignItems: 'center', zIndex: 10 },
+  editProfileBtn: { position: 'absolute', top: 16, right: 16, width: 32, height: 32, borderRadius: 16, borderWidth: 1, justifyContent: 'center', alignItems: 'center', zIndex: 10 },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end' },
-  modalContainer: { backgroundColor: COLORS.background, borderTopLeftRadius: 30, borderTopRightRadius: 30, padding: 24, paddingBottom: 40, borderWidth: 1, borderColor: COLORS.glassBorder },
+  modalContainer: { borderTopLeftRadius: 30, borderTopRightRadius: 30, padding: 24, paddingBottom: 40, borderWidth: 1 },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 },
-  modalTitle: { fontSize: 22, fontWeight: '900', color: COLORS.textPrimary },
-  modalCloseBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: COLORS.glassCard, justifyContent: 'center', alignItems: 'center' },
+  modalTitle: { fontSize: 22, fontWeight: '900' },
+  modalCloseBtn: { width: 36, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center' },
   editAvatarBtn: { alignSelf: 'center', marginBottom: 24, position: 'relative' },
-  editAvatarImage: { width: 100, height: 100, borderRadius: 50, borderWidth: 3, borderColor: COLORS.primaryOrange },
-  editAvatarPlaceholder: { width: 100, height: 100, borderRadius: 50, backgroundColor: COLORS.glassCard, borderWidth: 3, borderColor: COLORS.glassBorder, justifyContent: 'center', alignItems: 'center' },
-  editAvatarBadge: { position: 'absolute', bottom: 0, right: 0, backgroundColor: COLORS.primaryOrange, width: 28, height: 28, borderRadius: 14, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: COLORS.background },
-
-  appVersion: { textAlign: 'center', fontSize: 12, color: COLORS.textMuted, marginTop: 12 },
+  editAvatarImage: { width: 100, height: 100, borderRadius: 50, borderWidth: 3, borderColor: '#F59E0B' },
+  editAvatarPlaceholder: { width: 100, height: 100, borderRadius: 50, borderWidth: 3, justifyContent: 'center', alignItems: 'center' },
+  editAvatarBadge: { position: 'absolute', bottom: 0, right: 0, width: 28, height: 28, borderRadius: 14, justifyContent: 'center', alignItems: 'center', borderWidth: 2 },
 });

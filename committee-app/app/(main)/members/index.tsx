@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator, KeyboardAvoidingView, Platform, LayoutAnimation, UIManager } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { COLORS, GRADIENTS } from '../../../constants/theme';
@@ -8,10 +8,16 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CommitteeManagementService } from '../../../services/api';
 import { useCommittee } from '../_layout';
+import { useAppTheme } from '../../../context/ThemeContext';
+
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 export default function MembersScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { colors, isDark } = useAppTheme();
   const { committeeId } = useCommittee();
   
   const [name, setName] = useState('');
@@ -21,6 +27,12 @@ export default function MembersScreen() {
   const [membersList, setMembersList] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [formExpanded, setFormExpanded] = useState(false);
+
+  const toggleForm = () => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setFormExpanded(!formExpanded);
+  };
 
   const fetchMembers = async () => {
     if (!committeeId) return;
@@ -71,16 +83,16 @@ export default function MembersScreen() {
   };
 
   return (
-    <LinearGradient colors={GRADIENTS.dark} style={styles.container}>
+    <LinearGradient colors={isDark ? GRADIENTS.dark : GRADIENTS.lightDark} style={styles.container}>
       {/* Navigation Header */}
       <View style={{ paddingTop: insets.top + 16, paddingHorizontal: 20, paddingBottom: 10 }}>
         <View style={styles.headerRow}>
-          <TouchableOpacity style={styles.backBtn} onPress={() => router.back()} activeOpacity={0.8}>
-            <Ionicons name="arrow-back" size={22} color={COLORS.textPrimary} />
+          <TouchableOpacity style={[styles.backBtn, { backgroundColor: colors.glassCard, borderColor: colors.glassBorder }]} onPress={() => router.back()} activeOpacity={0.8}>
+            <Ionicons name="arrow-back" size={22} color={colors.textPrimary} />
           </TouchableOpacity>
           <View style={{ flex: 1 }}>
-            <Text style={styles.title}>Committee Members Management</Text>
-            <Text style={styles.subtitle}>Assign roles & administrative permissions to festival officers</Text>
+            <Text style={[styles.title, { color: colors.textPrimary }]}>Committee Members Management</Text>
+            <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Assign roles & administrative permissions to festival officers</Text>
           </View>
         </View>
       </View>
@@ -99,27 +111,46 @@ export default function MembersScreen() {
           showsVerticalScrollIndicator={false}
         >
 
+        {/* Collapsible Form Header */}
+        <TouchableOpacity
+          style={[styles.formToggle, { backgroundColor: `${colors.primaryOrange}1A`, borderColor: `${colors.primaryOrange}4D`, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 14, borderRadius: 12, borderWidth: 1, marginBottom: 20 }]}
+          onPress={toggleForm}
+          activeOpacity={0.8}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <Ionicons name="person-add-outline" size={20} color={colors.primaryOrange} style={{ marginRight: 8 }} />
+            <Text style={[{ fontSize: 13, fontWeight: '700' }, { color: colors.primaryOrange }]}>
+              {formExpanded ? 'Collapse Form' : 'Add New Member'}
+            </Text>
+          </View>
+          <Ionicons
+            name={formExpanded ? 'chevron-up' : 'chevron-down'}
+            size={20}
+            color={colors.primaryOrange}
+          />
+        </TouchableOpacity>
 
         {/* Add Member Card */}
-        <BlurView intensity={20} tint="dark" style={styles.glassCard}>
-          <Text style={styles.cardHeader}>Add New Committee Officer / Member</Text>
+        {formExpanded && (
+        <BlurView intensity={isDark ? 20 : 40} tint={isDark ? "dark" : "light"} style={[styles.glassCard, { borderColor: colors.glassBorder, backgroundColor: colors.glassCard }]}>
+          <Text style={[styles.cardHeader, { color: colors.textPrimary }]}>Add New Committee Officer / Member</Text>
 
           <View style={styles.group}>
-            <Text style={styles.label}>Officer Full Name</Text>
-            <TextInput value={name} onChangeText={setName} placeholder="e.g. Ramesh Varma" placeholderTextColor={COLORS.textMuted} style={styles.input} />
+            <Text style={[styles.label, { color: colors.textSecondary }]}>Officer Full Name</Text>
+            <TextInput value={name} onChangeText={setName} placeholder="e.g. Ramesh Varma" placeholderTextColor={colors.textMuted} style={[styles.input, { backgroundColor: isDark ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.3)', color: colors.textPrimary, borderColor: colors.glassBorder }]} />
           </View>
 
           <View style={styles.group}>
-            <Text style={styles.label}>Mobile Phone Number (Login ID) *</Text>
-            <TextInput value={phone} onChangeText={setPhone} placeholder="10-digit phone" placeholderTextColor={COLORS.textMuted} keyboardType="phone-pad" style={styles.input} />
+            <Text style={[styles.label, { color: colors.textSecondary }]}>Mobile Phone Number (Login ID) *</Text>
+            <TextInput value={phone} onChangeText={setPhone} placeholder="10-digit phone" placeholderTextColor={colors.textMuted} keyboardType="phone-pad" style={[styles.input, { backgroundColor: isDark ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.3)', color: colors.textPrimary, borderColor: colors.glassBorder }]} />
           </View>
 
           <View style={styles.group}>
-            <Text style={styles.label}>Member Role</Text>
+            <Text style={[styles.label, { color: colors.textSecondary }]}>Member Role</Text>
             <View style={styles.roleRow}>
               {(['MEMBER', 'ADMIN'] as const).map((r) => (
-                <TouchableOpacity key={r} onPress={() => setRole(r)} style={[styles.roleChip, role === r && styles.roleChipActive]}>
-                  <Text style={[styles.roleChipText, role === r && styles.roleChipTextActive]}>{r}</Text>
+                <TouchableOpacity key={r} onPress={() => setRole(r)} style={[styles.roleChip, { backgroundColor: colors.glassCard, borderColor: colors.glassBorder }, role === r && [styles.roleChipActive, { backgroundColor: colors.primaryOrange, borderColor: colors.primaryOrange }]]}>
+                  <Text style={[styles.roleChipText, { color: colors.textSecondary }, role === r && styles.roleChipTextActive]}>{r}</Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -138,27 +169,30 @@ export default function MembersScreen() {
             </LinearGradient>
           </TouchableOpacity>
         </BlurView>
+        )}
 
         {/* Active Members List */}
-        <Text style={styles.sectionTitle}>Active Officers & Members ({membersList.length})</Text>
+        <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Active Officers & Members ({membersList.length})</Text>
         {loading ? (
-          <ActivityIndicator color={COLORS.primaryOrange} style={{ marginVertical: 14 }} />
+          <ActivityIndicator color={colors.primaryOrange} style={{ marginVertical: 14 }} />
         ) : membersList.length === 0 ? (
-          <BlurView intensity={15} tint="dark" style={styles.memberCard}>
-            <Text style={{ color: COLORS.textMuted, textAlign: 'center', fontSize: 12 }}>No committee members found in database.</Text>
+          <BlurView intensity={isDark ? 15 : 30} tint={isDark ? "dark" : "light"} style={[styles.memberCard, { borderColor: colors.glassBorder, backgroundColor: colors.glassCard, flexDirection: 'column', alignItems: 'center', padding: 30 }]}>
+            <Ionicons name="people-outline" size={48} color={colors.textMuted} style={{ marginBottom: 12 }} />
+            <Text style={{ color: colors.textSecondary, textAlign: 'center', fontSize: 14, fontWeight: '600' }}>No Committee Members</Text>
+            <Text style={{ color: colors.textMuted, textAlign: 'center', fontSize: 12, marginTop: 4 }}>Add members above to grant them access.</Text>
           </BlurView>
         ) : (
           membersList.map((m: any) => (
-            <BlurView key={m.id} intensity={20} tint="dark" style={styles.memberCard}>
+            <BlurView key={m.id} intensity={isDark ? 20 : 40} tint={isDark ? "dark" : "light"} style={[styles.memberCard, { borderColor: colors.glassBorder, backgroundColor: colors.glassCard }]}>
               <View style={styles.memberAvatar}>
                 <Text style={styles.avatarText}>{(m.user?.name || m.name || 'M')[0]}</Text>
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.memberName}>{m.user?.name || m.name || 'Committee Officer'}</Text>
-                <Text style={styles.memberPhone}>📞 {m.user?.phone || m.phone || '9876543210'}</Text>
+                <Text style={[styles.memberName, { color: colors.textPrimary }]}>{m.user?.name || m.name || 'Committee Officer'}</Text>
+                <Text style={[styles.memberPhone, { color: colors.textSecondary }]}>📞 {m.user?.phone || m.phone || '9876543210'}</Text>
               </View>
-              <View style={[styles.roleBadge, m.role === 'ADMIN' && { backgroundColor: 'rgba(255, 107, 53, 0.2)', borderColor: COLORS.primaryOrange }]}>
-                <Text style={[styles.roleBadgeText, m.role === 'ADMIN' && { color: COLORS.primaryOrange }]}>{m.role || 'MEMBER'}</Text>
+              <View style={[styles.roleBadge, { borderColor: colors.glassBorder, backgroundColor: colors.glassCard }, m.role === 'ADMIN' && { backgroundColor: 'rgba(255, 107, 53, 0.2)', borderColor: colors.primaryOrange }]}>
+                <Text style={[styles.roleBadgeText, { color: colors.textSecondary }, m.role === 'ADMIN' && { color: colors.primaryOrange }]}>{m.role || 'MEMBER'}</Text>
               </View>
             </BlurView>
           ))
@@ -176,6 +210,7 @@ const styles = StyleSheet.create({
   backBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: COLORS.glassCard, justifyContent: 'center', alignItems: 'center', marginRight: 12, borderWidth: 1, borderColor: COLORS.glassBorder },
   title: { fontSize: 18, fontWeight: '800', color: COLORS.textPrimary },
   subtitle: { fontSize: 11, color: COLORS.textSecondary, marginTop: 2 },
+  formToggle: { padding: 14, borderRadius: 12, borderWidth: 1, marginBottom: 20 },
   glassCard: { padding: 20, borderRadius: 20, borderWidth: 1, borderColor: COLORS.glassBorder, backgroundColor: COLORS.glassCard, marginBottom: 24 },
   cardHeader: { fontSize: 14, fontWeight: '700', color: COLORS.textPrimary, marginBottom: 14 },
   group: { marginBottom: 14 },

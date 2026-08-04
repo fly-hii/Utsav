@@ -38,6 +38,7 @@ export class CommitteeController {
         password: req.body.password || 'password123',
         email: req.body.email || null,
         description: req.body.description || null,
+        otp: req.body.otp,
       };
 
       const result = await committeeService.registerCommittee(body as any, files);

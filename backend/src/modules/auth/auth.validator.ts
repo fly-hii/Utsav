@@ -15,6 +15,22 @@ export const loginSchema = z.object({
   password: z.string().min(1, 'Password is required'),
 });
 
+export const sendOtpSchema = z.object({
+  phone: z.string().regex(/^[6-9]\d{9}$/, 'Invalid phone number'),
+  purpose: z.enum(['LOGIN', 'FORGOT_PASSWORD', 'REGISTER']),
+});
+
+export const loginWithOtpSchema = z.object({
+  phone: z.string().regex(/^[6-9]\d{9}$/, 'Invalid phone number'),
+  otp: z.string().length(6, 'OTP must be 6 digits'),
+});
+
+export const resetPasswordWithOtpSchema = z.object({
+  phone: z.string().regex(/^[6-9]\d{9}$/, 'Invalid phone number'),
+  otp: z.string().length(6, 'OTP must be 6 digits'),
+  newPassword: z.string().min(6, 'Password must be at least 6 characters'),
+});
+
 export const refreshTokenSchema = z.object({
   refreshToken: z.string().min(1, 'Refresh token is required'),
 });

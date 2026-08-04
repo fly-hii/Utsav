@@ -4,10 +4,12 @@ import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { initializeAuth } from '../services/api';
-import { COLORS, GRADIENTS } from '../constants/theme';
+import { GRADIENTS } from '../constants/theme';
+import { useAppTheme } from '../context/ThemeContext';
 
 export default function SplashScreen() {
   const router = useRouter();
+  const { colors, isDark } = useAppTheme();
 
   useEffect(() => {
     const init = async () => {
@@ -24,13 +26,13 @@ export default function SplashScreen() {
   }, []);
 
   return (
-    <LinearGradient colors={GRADIENTS.dark} style={styles.container}>
+    <LinearGradient colors={isDark ? GRADIENTS.dark : GRADIENTS.lightDark} style={styles.container}>
       <Image 
         source={require('../assets/icon.png')} 
         style={{ width: 120, height: 120, resizeMode: 'contain', marginBottom: 20 }} 
       />
 
-      <Text style={styles.subtitle}>
+      <Text style={[styles.subtitle, { color: colors.gold }]}>
         Discover Village Festivals & Connect
       </Text>
     </LinearGradient>
@@ -43,13 +45,11 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     borderRadius: 30,
-    backgroundColor: COLORS.glassCard,
     borderWidth: 1,
-    borderColor: COLORS.glassBorder,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 20,
   },
-  title: { fontSize: 36, fontWeight: '800', color: COLORS.textPrimary, letterSpacing: 1.5 },
-  subtitle: { fontSize: 14, color: COLORS.gold, marginTop: 8, fontWeight: '500' },
+  title: { fontSize: 36, fontWeight: '800', letterSpacing: 1.5 },
+  subtitle: { fontSize: 14, marginTop: 8, fontWeight: '500' },
 });

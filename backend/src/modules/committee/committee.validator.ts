@@ -16,6 +16,7 @@ export const registerCommitteeSchema = z.object({
   phone: z.string().regex(/^[6-9]\d{9}$/, 'Invalid phone number'),
   email: z.string().email().optional().or(z.literal('')),
   description: z.string().optional(),
+  otp: z.string().length(6, 'OTP must be 6 digits'),
 });
 
 export const updateCommitteeSchema = z.object({

@@ -24,6 +24,7 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import { useVideoPlayer, VideoView } from 'expo-video';
+import { useAppTheme } from '../../../context/ThemeContext';
 
 const ReelThumbnail = ({ item }: { item: any }) => {
   const [thumb, setThumb] = useState<string | null>(item.thumbnailS3Url || null);
@@ -42,10 +43,13 @@ const ReelThumbnail = ({ item }: { item: any }) => {
   return <Ionicons name="film" size={24} color={COLORS.primaryOrange} />;
 };
 import { ReelService } from '../../../services/api';
+import { useCommittee } from '../_layout';
 
 export default function CommitteeReelsManagementScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { colors, isDark } = useAppTheme();
+  const { committeeId } = useCommittee();
 
   // Active Tab: 'LIST' | 'CREATE'
   const [activeTab, setActiveTab] = useState<'LIST' | 'CREATE'>('LIST');
@@ -82,9 +86,10 @@ export default function CommitteeReelsManagementScreen() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const fetchReels = async () => {
+    if (!committeeId) return;
     try {
       setLoadingReels(true);
-      const res: any = await ReelService.getAll();
+      const res: any = await ReelService.getAll(committeeId);
       const list = Array.isArray(res) ? res : Array.isArray(res?.data) ? res.data : [];
       setReels(list);
     } catch (err) {
@@ -96,8 +101,10 @@ export default function CommitteeReelsManagementScreen() {
   };
 
   useEffect(() => {
-    fetchReels();
-  }, []);
+    if (committeeId) {
+      fetchReels();
+    }
+  }, [committeeId]);
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -139,7 +146,7 @@ export default function CommitteeReelsManagementScreen() {
       setSubmitting(true);
 
       const parameters = {
-        committeeId: 'comm-kovvur-101',
+        committeeId: committeeId || 'comm-kovvur-101',
         caption: caption || 'Grand Procession Festival Reel',
         hashtags: hashtags || '#Utsav2026',
         duration: '300',
@@ -224,49 +231,49 @@ export default function CommitteeReelsManagementScreen() {
   };
 
   return (
-    <LinearGradient colors={GRADIENTS.dark} style={styles.container}>
+    <LinearGradient colors={isDark ? GRADIENTS.dark : GRADIENTS.lightDark} style={styles.container}>
       <View style={[styles.scrollContent, { paddingTop: insets.top + 16, paddingBottom: 20, flex: 1 }]}>
         {/* Navigation Header */}
         <View style={styles.headerRow}>
-          <TouchableOpacity style={styles.backBtn} onPress={() => router.back()} activeOpacity={0.8}>
-            <Ionicons name="arrow-back" size={22} color={COLORS.textPrimary} />
+          <TouchableOpacity style={[styles.backBtn, { backgroundColor: colors.glassCard, borderColor: colors.glassBorder }]} onPress={() => router.back()} activeOpacity={0.8}>
+            <Ionicons name="arrow-back" size={22} color={colors.textPrimary} />
           </TouchableOpacity>
           <View style={{ flex: 1 }}>
-            <Text style={styles.title}>Festival Reels Hub 🎥</Text>
-            <Text style={styles.subtitle}>Upload, audit, edit & moderate village video reels (up to 5 min)</Text>
+            <Text style={[styles.title, { color: colors.textPrimary }]}>Festival Reels Hub 🎥</Text>
+            <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Upload, audit, edit & moderate village video reels (up to 5 min)</Text>
           </View>
         </View>
 
         {/* Tab Segment Controls */}
-        <View style={styles.tabSegmentRow}>
+        <View style={[styles.tabSegmentRow, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)' }]}>
           <TouchableOpacity
             onPress={() => setActiveTab('LIST')}
-            style={[styles.tabBtn, activeTab === 'LIST' && styles.tabBtnActive]}
+            style={[styles.tabBtn, activeTab === 'LIST' && [styles.tabBtnActive, { borderColor: colors.primaryOrange }]]}
             activeOpacity={0.8}
           >
             <Ionicons
               name="film-outline"
               size={18}
-              color={activeTab === 'LIST' ? COLORS.primaryOrange : COLORS.textMuted}
+              color={activeTab === 'LIST' ? colors.primaryOrange : colors.textMuted}
               style={{ marginRight: 6 }}
             />
-            <Text style={[styles.tabText, activeTab === 'LIST' && styles.tabTextActive]}>
+            <Text style={[styles.tabText, { color: colors.textMuted }, activeTab === 'LIST' && [styles.tabTextActive, { color: colors.primaryOrange }]]}>
               Published Reels ({reels.length})
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             onPress={() => setActiveTab('CREATE')}
-            style={[styles.tabBtn, activeTab === 'CREATE' && styles.tabBtnActive]}
+            style={[styles.tabBtn, activeTab === 'CREATE' && [styles.tabBtnActive, { borderColor: colors.primaryOrange }]]}
             activeOpacity={0.8}
           >
             <Ionicons
               name="cloud-upload-outline"
               size={18}
-              color={activeTab === 'CREATE' ? COLORS.primaryOrange : COLORS.textMuted}
+              color={activeTab === 'CREATE' ? colors.primaryOrange : colors.textMuted}
               style={{ marginRight: 6 }}
             />
-            <Text style={[styles.tabText, activeTab === 'CREATE' && styles.tabTextActive]}>+ Post New Reel</Text>
+            <Text style={[styles.tabText, { color: colors.textMuted }, activeTab === 'CREATE' && [styles.tabTextActive, { color: colors.primaryOrange }]]}>+ Post New Reel</Text>
           </TouchableOpacity>
         </View>
 
@@ -275,17 +282,17 @@ export default function CommitteeReelsManagementScreen() {
           <View style={{ flex: 1 }}>
             {loadingReels ? (
               <View style={styles.loadingBox}>
-                <ActivityIndicator color={COLORS.primaryOrange} size="large" />
-                <Text style={{ color: COLORS.textSecondary, marginTop: 12, fontSize: 12 }}>
+                <ActivityIndicator color={colors.primaryOrange} size="large" />
+                <Text style={{ color: colors.textSecondary, marginTop: 12, fontSize: 12 }}>
                   Loading Published Video Reels...
                 </Text>
               </View>
             ) : reels.length === 0 ? (
-              <BlurView intensity={20} tint="dark" style={styles.emptyCard}>
-                <Ionicons name="videocam-off-outline" size={48} color={COLORS.textMuted} />
-                <Text style={styles.emptyTitle}>No Published Reels Yet</Text>
-                <Text style={styles.emptySub}>Post short videos (up to 5 minutes) of festival celebrations to engage devotees.</Text>
-                <TouchableOpacity onPress={() => setActiveTab('CREATE')} style={styles.createNowBtn} activeOpacity={0.85}>
+              <BlurView intensity={isDark ? 20 : 40} tint={isDark ? "dark" : "light"} style={[styles.emptyCard, { borderColor: colors.glassBorder, backgroundColor: colors.glassCard }]}>
+                <Ionicons name="videocam-off-outline" size={48} color={colors.textMuted} />
+                <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>No Published Reels Yet</Text>
+                <Text style={[styles.emptySub, { color: colors.textSecondary }]}>Post short videos (up to 5 minutes) of festival celebrations to engage devotees.</Text>
+                <TouchableOpacity onPress={() => setActiveTab('CREATE')} style={[styles.createNowBtn, { backgroundColor: colors.primaryOrange }]} activeOpacity={0.85}>
                   <Text style={styles.createNowText}>+ Post First Video Reel</Text>
                 </TouchableOpacity>
               </BlurView>
@@ -293,26 +300,26 @@ export default function CommitteeReelsManagementScreen() {
               <FlatList
                 data={reels}
                 keyExtractor={(item) => item.id}
-                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primaryOrange} />}
+                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primaryOrange} />}
                 contentContainerStyle={{ paddingBottom: 20 }}
                 renderItem={({ item }) => (
-                  <BlurView intensity={25} tint="dark" style={styles.reelCard}>
+                  <BlurView intensity={isDark ? 25 : 50} tint={isDark ? "dark" : "light"} style={[styles.reelCard, { borderColor: colors.glassBorder, backgroundColor: colors.glassCard }]}>
                     <View style={styles.reelCardHeader}>
-                      <View style={styles.thumbnailSim}>
+                      <View style={[styles.thumbnailSim, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)' }]}>
                         <ReelThumbnail item={item} />
                       </View>
 
                       <View style={{ flex: 1, paddingLeft: 12 }}>
-                        <Text style={styles.reelCaption} numberOfLines={2}>
+                        <Text style={[styles.reelCaption, { color: colors.textPrimary }]} numberOfLines={2}>
                           {item.caption || 'Festival Celebration Reel'}
                         </Text>
-                        <Text style={styles.reelHashtags} numberOfLines={1}>
+                        <Text style={[styles.reelHashtags, { color: colors.saffron }]} numberOfLines={1}>
                           {item.hashtags || '#Utsav2026'}
                         </Text>
                         <View style={styles.metricsRow}>
-                          <Text style={styles.metricText}>👁️ {item.viewCount || 0} views</Text>
-                          <Text style={styles.metricText}>❤️ {item.likeCount || 0} likes</Text>
-                          <Text style={styles.metricText}>💬 {item.commentCount || 0} comments</Text>
+                          <Text style={[styles.metricText, { color: colors.textSecondary }]}>👁️ {item.viewCount || 0} views</Text>
+                          <Text style={[styles.metricText, { color: colors.textSecondary }]}>❤️ {item.likeCount || 0} likes</Text>
+                          <Text style={[styles.metricText, { color: colors.textSecondary }]}>💬 {item.commentCount || 0} comments</Text>
                         </View>
                       </View>
                     </View>
@@ -359,11 +366,11 @@ export default function CommitteeReelsManagementScreen() {
             keyboardVerticalOffset={Platform.OS === 'ios' ? 120 : 20}
           >
           <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-            <BlurView intensity={20} tint="dark" style={styles.glassCard}>
+            <BlurView intensity={isDark ? 20 : 40} tint={isDark ? "dark" : "light"} style={[styles.glassCard, { borderColor: colors.glassBorder, backgroundColor: colors.glassCard }]}>
               <View style={styles.group}>
-                <Text style={styles.label}>Festival Video Reel File (Max 5 Min / 500 MB)</Text>
+                <Text style={[styles.label, { color: colors.textSecondary }]}>Festival Video Reel File (Max 5 Min / 500 MB)</Text>
                 {videoUri ? (
-                  <View style={styles.videoPreviewContainer}>
+                  <View style={[styles.videoPreviewContainer, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.04)' : 'rgba(0, 0, 0, 0.03)', borderColor: colors.glassBorder }]}>
                     <View style={styles.videoPreviewBox}>
                       {Platform.OS === 'web' ? (
                         // @ts-ignore
@@ -389,40 +396,40 @@ export default function CommitteeReelsManagementScreen() {
                       </View>
 
                       <TouchableOpacity onPress={handlePickVideo} style={styles.changeVideoBtn} activeOpacity={0.8}>
-                        <Ionicons name="swap-horizontal" size={14} color={COLORS.primaryOrange} style={{ marginRight: 4 }} />
-                        <Text style={styles.changeVideoText}>Change Video</Text>
+                        <Ionicons name="swap-horizontal" size={14} color={colors.primaryOrange} style={{ marginRight: 4 }} />
+                        <Text style={[styles.changeVideoText, { color: colors.primaryOrange }]}>Change Video</Text>
                       </TouchableOpacity>
                     </View>
                   </View>
                 ) : (
-                  <TouchableOpacity onPress={handlePickVideo} style={styles.uploadBtn} activeOpacity={0.8}>
-                    <Ionicons name="videocam-outline" size={36} color={COLORS.primaryOrange} />
-                    <Text style={styles.uploadText}>Select Vertical Video from Gallery (Any Format up to 5 min)</Text>
+                  <TouchableOpacity onPress={handlePickVideo} style={[styles.uploadBtn, { borderColor: colors.primaryOrange }]} activeOpacity={0.8}>
+                    <Ionicons name="videocam-outline" size={36} color={colors.primaryOrange} />
+                    <Text style={[styles.uploadText, { color: colors.primaryOrange }]}>Select Vertical Video from Gallery (Any Format up to 5 min)</Text>
                   </TouchableOpacity>
                 )}
               </View>
 
               <View style={styles.group}>
-                <Text style={styles.label}>Caption</Text>
+                <Text style={[styles.label, { color: colors.textSecondary }]}>Caption</Text>
                 <TextInput
                   value={caption}
                   onChangeText={setCaption}
                   placeholder="e.g. Grand Sitarama Kalyanam Rathotsavam Procession!"
-                  placeholderTextColor={COLORS.textMuted}
+                  placeholderTextColor={colors.textMuted}
                   multiline
                   numberOfLines={3}
-                  style={[styles.input, { height: 75 }]}
+                  style={[styles.input, { height: 75, backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)', color: colors.textPrimary, borderColor: colors.glassBorder }]}
                 />
               </View>
 
               <View style={styles.group}>
-                <Text style={styles.label}>Hashtags</Text>
+                <Text style={[styles.label, { color: colors.textSecondary }]}>Hashtags</Text>
                 <TextInput
                   value={hashtags}
                   onChangeText={setHashtags}
                   placeholder="#VillageFestival #Utsav #SriRama"
-                  placeholderTextColor={COLORS.textMuted}
-                  style={styles.input}
+                  placeholderTextColor={colors.textMuted}
+                  style={[styles.input, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)', color: colors.textPrimary, borderColor: colors.glassBorder }]}
                 />
               </View>
 
@@ -445,62 +452,64 @@ export default function CommitteeReelsManagementScreen() {
 
         {/* EDIT REEL MODAL */}
         <Modal visible={editModalVisible} animationType="slide" transparent={true} onRequestClose={() => setEditModalVisible(false)}>
-          <View style={styles.modalOverlay}>
-            <BlurView intensity={40} tint="dark" style={styles.modalCard}>
-              <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>Edit Reel Details 📝</Text>
-                <TouchableOpacity onPress={() => setEditModalVisible(false)}>
-                  <Ionicons name="close-circle" size={24} color={COLORS.textMuted} />
-                </TouchableOpacity>
-              </View>
-
-              {editingReel?.videoS3Url && (
-                <View style={[styles.videoPreviewBox, { height: 160, marginBottom: 16 }]}>
-                  {Platform.OS === 'web' ? (
-                    // @ts-ignore
-                    <video
-                      src={editingReel.videoS3Url}
-                      controls
-                      autoPlay
-                      loop
-                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                    />
-                  ) : (
-                    <VideoView
-                      player={editPlayer}
-                      style={{ width: '100%', height: '100%' }}
-                    />
-                  )}
+          <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
+            <View style={[styles.modalOverlay, { backgroundColor: isDark ? 'rgba(0,0,0,0.85)' : 'rgba(255,255,255,0.9)' }]}>
+              <BlurView intensity={isDark ? 40 : 80} tint={isDark ? "dark" : "light"} style={[styles.modalCard, { backgroundColor: isDark ? '#1F1F30' : '#F1F5F9', borderColor: colors.glassBorder }]}>
+                <View style={styles.modalHeader}>
+                  <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>Edit Reel Details 📝</Text>
+                  <TouchableOpacity onPress={() => setEditModalVisible(false)}>
+                    <Ionicons name="close-circle" size={24} color={colors.textMuted} />
+                  </TouchableOpacity>
                 </View>
-              )}
 
-              <View style={styles.group}>
-                <Text style={styles.label}>Update Caption</Text>
-                <TextInput
-                  value={editCaption}
-                  onChangeText={setEditCaption}
-                  multiline
-                  numberOfLines={3}
-                  style={[styles.input, { height: 75 }]}
-                />
-              </View>
+                {editingReel?.videoS3Url && (
+                  <View style={[styles.videoPreviewBox, { height: 160, marginBottom: 16 }]}>
+                    {Platform.OS === 'web' ? (
+                      // @ts-ignore
+                      <video
+                        src={editingReel.videoS3Url}
+                        controls
+                        autoPlay
+                        loop
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      />
+                    ) : (
+                      <VideoView
+                        player={editPlayer}
+                        style={{ width: '100%', height: '100%' }}
+                      />
+                    )}
+                  </View>
+                )}
 
-              <View style={styles.group}>
-                <Text style={styles.label}>Update Hashtags</Text>
-                <TextInput value={editHashtags} onChangeText={setEditHashtags} style={styles.input} />
-              </View>
+                <View style={styles.group}>
+                  <Text style={[styles.label, { color: colors.textSecondary }]}>Update Caption</Text>
+                  <TextInput
+                    value={editCaption}
+                    onChangeText={setEditCaption}
+                    multiline
+                    numberOfLines={3}
+                    style={[styles.input, { height: 75, backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)', color: colors.textPrimary, borderColor: colors.glassBorder }]}
+                  />
+                </View>
 
-              <View style={styles.modalActions}>
-                <TouchableOpacity onPress={() => setEditModalVisible(false)} style={styles.cancelBtn}>
-                  <Text style={{ color: COLORS.textMuted, fontWeight: '700' }}>Cancel</Text>
-                </TouchableOpacity>
+                <View style={styles.group}>
+                  <Text style={[styles.label, { color: colors.textSecondary }]}>Update Hashtags</Text>
+                  <TextInput value={editHashtags} onChangeText={setEditHashtags} style={[styles.input, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)', color: colors.textPrimary, borderColor: colors.glassBorder }]} />
+                </View>
 
-                <TouchableOpacity onPress={handleSaveEdit} disabled={savingEdit} style={styles.saveBtn}>
-                  {savingEdit ? <ActivityIndicator color="#FFF" /> : <Text style={styles.saveBtnText}>Save Changes</Text>}
-                </TouchableOpacity>
-              </View>
-            </BlurView>
-          </View>
+                <View style={styles.modalActions}>
+                  <TouchableOpacity onPress={() => setEditModalVisible(false)} style={[styles.cancelBtn, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)' }]}>
+                    <Text style={{ color: colors.textMuted, fontWeight: '700' }}>Cancel</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity onPress={handleSaveEdit} disabled={savingEdit} style={[styles.saveBtn, { backgroundColor: colors.primaryOrange }]}>
+                    {savingEdit ? <ActivityIndicator color="#FFF" /> : <Text style={styles.saveBtnText}>Save Changes</Text>}
+                  </TouchableOpacity>
+                </View>
+              </BlurView>
+            </View>
+          </KeyboardAvoidingView>
         </Modal>
       </View>
     </LinearGradient>

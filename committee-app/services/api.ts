@@ -113,6 +113,21 @@ export const CommitteeAuthService = {
     }
     return res.data;
   },
+  sendOtp: async (phone: string, purpose: 'LOGIN' | 'FORGOT_PASSWORD' | 'REGISTER') => {
+    const res = await api.post('/auth/send-otp', { phone, purpose });
+    return res.data;
+  },
+  loginWithOtp: async (phone: string, otp: string) => {
+    const res = await api.post('/auth/login-with-otp', { phone, otp });
+    if (res.data?.data?.accessToken) {
+      setAuthToken(res.data.data.accessToken, res.data.data.refreshToken);
+    }
+    return res.data;
+  },
+  resetPasswordWithOtp: async (phone: string, otp: string, newPassword: string) => {
+    const res = await api.post('/auth/reset-password-with-otp', { phone, otp, newPassword });
+    return res.data;
+  },
   registerCommittee: async (data: any) => {
     const res = await api.post('/committees/register', data);
     return res.data;
@@ -221,8 +236,9 @@ export const ReelService = {
       return res.data;
     }
   },
-  getAll: async () => {
-    const res = await api.get('/reels');
+  getAll: async (committeeId?: string) => {
+    const url = committeeId ? `/reels?committeeId=${committeeId}` : '/reels';
+    const res = await api.get(url);
     return res.data;
   },
   delete: async (reelId: string) => {

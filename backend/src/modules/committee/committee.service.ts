@@ -38,6 +38,7 @@ interface RegisterCommitteeInput {
   email?: string;
   password: string;
   description?: string;
+  otp: string;
 }
 
 export class CommitteeService {
@@ -62,6 +63,24 @@ export class CommitteeService {
         await query("UPDATE users SET role = 'COMMITTEE_ADMIN' WHERE id = ?", [userId]);
       }
     } else {
+      // Validate OTP for new user
+      const otpRecord: any = await queryOne(
+        `SELECT id, isUsed, expiresAt FROM otps WHERE phone = ? AND otp = ? AND purpose = 'REGISTER' ORDER BY createdAt DESC LIMIT 1`,
+        [input.phone, input.otp]
+      );
+      if (!otpRecord) {
+        throw { statusCode: 400, message: 'Invalid OTP' };
+      }
+      if (otpRecord.isUsed) {
+        throw { statusCode: 400, message: 'OTP already used' };
+      }
+      if (new Date(otpRecord.expiresAt) < new Date()) {
+        throw { statusCode: 400, message: 'OTP expired' };
+      }
+      
+      // Mark OTP as used
+      await query('UPDATE otps SET isUsed = 1 WHERE id = ?', [otpRecord.id]);
+
       userId = uuidv4();
       const hashedPassword = await hashPassword(input.password);
       await query(

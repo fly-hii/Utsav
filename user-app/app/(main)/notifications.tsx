@@ -6,10 +6,12 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '../../services/api';
-import { COLORS, GRADIENTS } from '../../constants/theme';
+import { GRADIENTS } from '../../constants/theme';
+import { useAppTheme } from '../../context/ThemeContext';
 
 export default function NotificationsScreen() {
   const insets = useSafeAreaInsets();
+  const { colors, isDark } = useAppTheme();
   const [notifications, setNotifications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -59,14 +61,14 @@ export default function NotificationsScreen() {
     const isUnread = !item.isRead;
     return (
       <TouchableOpacity onPress={() => markAsRead(item.id, item.isRead)} activeOpacity={0.8}>
-        <BlurView intensity={20} tint="dark" style={[styles.card, isUnread && styles.unreadCard]}>
+        <BlurView intensity={isDark ? 20 : 40} tint={isDark ? "dark" : "light"} style={[styles.card, { borderColor: colors.glassBorder, backgroundColor: isDark ? 'transparent' : 'rgba(255, 255, 255, 0.5)' }, isUnread && { borderColor: `${colors.primaryOrange}4D`, backgroundColor: `${colors.primaryOrange}0D` }]}>
           <View style={styles.iconContainer}>
-            <Ionicons name={isUnread ? 'notifications' : 'notifications-outline'} size={24} color={isUnread ? COLORS.primaryOrange : COLORS.textMuted} />
+            <Ionicons name={isUnread ? 'notifications' : 'notifications-outline'} size={24} color={isUnread ? colors.primaryOrange : colors.textMuted} />
           </View>
           <View style={styles.contentContainer}>
-            <Text style={[styles.title, isUnread && styles.unreadText]}>{item.title}</Text>
-            <Text style={styles.body}>{item.body}</Text>
-            <Text style={styles.time}>{new Date(item.createdAt).toLocaleString()}</Text>
+            <Text style={[styles.title, { color: colors.textPrimary }, isUnread && { color: colors.primaryOrange }]}>{item.title}</Text>
+            <Text style={[styles.body, { color: colors.textSecondary }]}>{item.body}</Text>
+            <Text style={[styles.time, { color: colors.textMuted }]}>{new Date(item.createdAt).toLocaleString()}</Text>
           </View>
         </BlurView>
       </TouchableOpacity>
@@ -74,17 +76,17 @@ export default function NotificationsScreen() {
   };
 
   return (
-    <LinearGradient colors={GRADIENTS.dark} style={styles.container}>
+    <LinearGradient colors={isDark ? GRADIENTS.dark : GRADIENTS.lightDark} style={styles.container}>
       <Stack.Screen
         options={{
           headerShown: true,
           headerTransparent: true,
           headerTitle: 'Notifications',
-          headerTitleStyle: { color: '#FFF', fontWeight: 'bold' },
-          headerTintColor: '#FFF',
+          headerTitleStyle: { color: colors.textPrimary, fontWeight: 'bold' },
+          headerTintColor: colors.textPrimary,
           headerRight: () => (
             <TouchableOpacity onPress={markAllAsRead} style={{ marginRight: 15 }}>
-              <Ionicons name="checkmark-done-circle-outline" size={24} color={COLORS.primaryOrange} />
+              <Ionicons name="checkmark-done-circle-outline" size={24} color={colors.primaryOrange} />
             </TouchableOpacity>
           ),
         }}
@@ -92,18 +94,18 @@ export default function NotificationsScreen() {
       
       <View style={[styles.listContainer, { paddingTop: insets.top + 50 }]}>
         {loading ? (
-          <ActivityIndicator size="large" color={COLORS.primaryOrange} style={{ marginTop: 50 }} />
+          <ActivityIndicator size="large" color={colors.primaryOrange} style={{ marginTop: 50 }} />
         ) : (
           <FlatList
             data={notifications}
             keyExtractor={(item) => item.id}
             renderItem={renderItem}
             contentContainerStyle={{ padding: 15, paddingBottom: insets.bottom + 20 }}
-            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={COLORS.primaryOrange} />}
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.primaryOrange} />}
             ListEmptyComponent={() => (
               <View style={styles.emptyContainer}>
-                <Ionicons name="notifications-off-outline" size={64} color={COLORS.textMuted} />
-                <Text style={styles.emptyText}>No notifications yet.</Text>
+                <Ionicons name="notifications-off-outline" size={64} color={colors.textMuted} />
+                <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No notifications yet.</Text>
               </View>
             )}
           />
@@ -126,12 +128,9 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
     overflow: 'hidden',
   },
   unreadCard: {
-    borderColor: 'rgba(255, 107, 53, 0.3)',
-    backgroundColor: 'rgba(255, 107, 53, 0.05)',
   },
   iconContainer: {
     marginRight: 15,
@@ -142,22 +141,18 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   title: {
-    color: '#FFF',
     fontSize: 16,
     fontWeight: '600',
     marginBottom: 4,
   },
   unreadText: {
-    color: COLORS.primaryOrange,
   },
   body: {
-    color: COLORS.textSecondary,
     fontSize: 14,
     lineHeight: 20,
     marginBottom: 8,
   },
   time: {
-    color: COLORS.textMuted,
     fontSize: 12,
   },
   emptyContainer: {
@@ -166,7 +161,6 @@ const styles = StyleSheet.create({
     marginTop: 100,
   },
   emptyText: {
-    color: COLORS.textSecondary,
     marginTop: 15,
     fontSize: 16,
   },

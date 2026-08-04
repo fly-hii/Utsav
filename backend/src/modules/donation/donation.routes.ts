@@ -8,8 +8,10 @@ import { hashPassword, generateTempPassword } from '../../utils/password';
 import { sendSuccess, sendCreated, sendError, sendNotFound, parsePagination, buildPaginationMeta } from '../../utils/response';
 import { emitDonation, emitDashboardUpdate } from '../../websocket/socket';
 import { uploadSingle } from '../../middleware/upload';
-import { uploadToS3, generateS3Key, S3_FOLDERS, getPresignedUrl } from '../../config/s3';
+import { getPresignedUrl, uploadToS3, generateS3Key, S3_FOLDERS } from '../../config/s3';
 import { notifyCommitteeMembers, notifyUser } from '../../services/notification.service';
+import { SMSService } from '../../services/sms.service';
+import { generateReceiptHtml } from '../../utils/receipt-generator';
 import { v4 as uuidv4 } from 'uuid';
 
 const addDonationSchema = z.object({
@@ -104,6 +106,28 @@ router.post(
       );
 
       const donation = await queryOne('SELECT * FROM donations WHERE id = ?', [donationId]);
+      const committee = await queryOne('SELECT * FROM committees WHERE id = ?', [committeeId]);
+
+      // --- GENERATE & SEND SMS RECEIPT ---
+      try {
+        if (donorPhone) {
+          const htmlContent = generateReceiptHtml(donation, committee);
+          const key = generateS3Key(S3_FOLDERS.DONATION_RECEIPTS, `${receiptNo}.html`);
+          const uploaded = await uploadToS3(Buffer.from(htmlContent), key, 'text/html');
+          
+          await query('UPDATE donations SET receiptHtmlS3Key = ?, receiptHtmlS3Url = ? WHERE id = ?', [
+            uploaded.s3Key,
+            uploaded.s3Url,
+            donationId
+          ]);
+          
+          donation.receiptHtmlS3Url = uploaded.s3Url;
+          await SMSService.sendReceiptLink(donorPhone, uploaded.s3Url, amount, committee.name);
+        }
+      } catch (err) {
+        console.error('Failed to generate/send receipt:', err);
+      }
+      // ------------------------------------
 
       try {
         emitDonation(committeeId, donation);

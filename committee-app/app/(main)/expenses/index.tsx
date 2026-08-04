@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator, Modal, Image, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator, Modal, Image, KeyboardAvoidingView, Platform, LayoutAnimation, UIManager } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { COLORS, GRADIENTS } from '../../../constants/theme';
@@ -9,6 +9,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CommitteeManagementService } from '../../../services/api';
 import { useCommittee } from '../_layout';
 import * as ImagePicker from 'expo-image-picker';
+import { useAppTheme } from '../../../context/ThemeContext';
+
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 const EXPENSE_CATEGORIES = [
   'DECORATION', 'FOOD', 'TRANSPORT', 'SOUND', 'LIGHTING', 'PRIEST', 'FLOWERS', 'PRINTING', 'RENTAL', 'OTHER'
@@ -17,6 +22,7 @@ const EXPENSE_CATEGORIES = [
 export default function RecordExpenseScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { colors, isDark } = useAppTheme();
   const { committeeId } = useCommittee();
   
   const [category, setCategory] = useState('DECORATION');
@@ -25,6 +31,12 @@ export default function RecordExpenseScreen() {
   const [description, setDescription] = useState('');
   const [billImageUri, setBillImageUri] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [formExpanded, setFormExpanded] = useState(false);
+
+  const toggleForm = () => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setFormExpanded(!formExpanded);
+  };
 
   const [recordedExpenses, setRecordedExpenses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -107,16 +119,16 @@ export default function RecordExpenseScreen() {
   };
 
   return (
-    <LinearGradient colors={GRADIENTS.dark} style={styles.container}>
+    <LinearGradient colors={isDark ? GRADIENTS.dark : GRADIENTS.lightDark} style={styles.container}>
       {/* Navigation Header */}
       <View style={{ paddingTop: insets.top + 16, paddingHorizontal: 20, paddingBottom: 10 }}>
         <View style={styles.headerRow}>
-          <TouchableOpacity style={styles.backBtn} onPress={() => router.back()} activeOpacity={0.8}>
-            <Ionicons name="arrow-back" size={22} color={COLORS.textPrimary} />
+          <TouchableOpacity style={[styles.backBtn, { backgroundColor: colors.glassCard, borderColor: colors.glassBorder }]} onPress={() => router.back()} activeOpacity={0.8}>
+            <Ionicons name="arrow-back" size={22} color={colors.textPrimary} />
           </TouchableOpacity>
           <View style={{ flex: 1 }}>
-            <Text style={styles.title}>Committee Expense Management</Text>
-            <Text style={styles.subtitle}>Full line-item details accessible by Committee Members & Admins 🔐</Text>
+            <Text style={[styles.title, { color: colors.textPrimary }]}>Committee Expense Management</Text>
+            <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Full line-item details accessible by Committee Members & Admins 🔐</Text>
           </View>
         </View>
       </View>
@@ -135,61 +147,81 @@ export default function RecordExpenseScreen() {
           showsVerticalScrollIndicator={false}
         >
 
+          {/* Collapsible Form Header */}
+          <TouchableOpacity
+            style={[styles.formToggle, { backgroundColor: `${colors.primaryOrange}1A`, borderColor: `${colors.primaryOrange}4D` }]}
+            onPress={toggleForm}
+            activeOpacity={0.8}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Ionicons name="add-circle-outline" size={20} color={colors.primaryOrange} style={{ marginRight: 8 }} />
+              <Text style={[styles.formToggleText, { color: colors.primaryOrange }]}>
+                {formExpanded ? 'Collapse Form' : 'Add New Expense'}
+              </Text>
+            </View>
+            <Ionicons
+              name={formExpanded ? 'chevron-up' : 'chevron-down'}
+              size={20}
+              color={colors.primaryOrange}
+            />
+          </TouchableOpacity>
+
           {/* Add Expense Form */}
-          <BlurView intensity={20} tint="dark" style={styles.glassCard}>
-            <Text style={styles.formHeading}>Record New Expense Entry</Text>
+          {formExpanded && (
+          <BlurView intensity={isDark ? 20 : 40} tint={isDark ? "dark" : "light"} style={[styles.glassCard, { borderColor: colors.glassBorder, backgroundColor: colors.glassCard }]}>
+            <Text style={[styles.formHeading, { color: colors.textPrimary }]}>Record New Expense Entry</Text>
             <View style={styles.group}>
-              <Text style={styles.label}>Expense Category *</Text>
+              <Text style={[styles.label, { color: colors.textSecondary }]}>Expense Category *</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.catScroll}>
                 {EXPENSE_CATEGORIES.map((cat) => (
                   <TouchableOpacity
                     key={cat}
                     onPress={() => setCategory(cat)}
-                    style={[styles.catChip, category === cat && styles.catChipActive]}
+                    style={[styles.catChip, { backgroundColor: colors.glassCard, borderColor: colors.glassBorder }, category === cat && [styles.catChipActive, { backgroundColor: 'rgba(245, 158, 11, 0.25)', borderColor: colors.primaryOrange }]]}
                   >
-                    <Text style={[styles.catText, category === cat && styles.catTextActive]}>{cat}</Text>
+                    <Text style={[styles.catText, { color: colors.textSecondary }, category === cat && [styles.catTextActive, { color: colors.primaryOrange }]]}>{cat}</Text>
                   </TouchableOpacity>
                 ))}
               </ScrollView>
             </View>
 
             <View style={styles.group}>
-              <Text style={styles.label}>Expense Amount (₹) *</Text>
+              <Text style={[styles.label, { color: colors.textSecondary }]}>Expense Amount (₹) *</Text>
               <TextInput
                 value={amount}
                 onChangeText={setAmount}
                 placeholder="e.g. 15000"
-                placeholderTextColor={COLORS.textMuted}
+                placeholderTextColor={colors.textMuted}
                 keyboardType="numeric"
-                style={[styles.input, { fontSize: 18, fontWeight: '700', color: COLORS.error }]}
+                style={[styles.input, { backgroundColor: isDark ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.3)', color: colors.error, borderColor: colors.glassBorder, fontSize: 18, fontWeight: '700' }]}
               />
             </View>
 
             <View style={styles.group}>
-              <Text style={styles.label}>Vendor / Shop Name</Text>
+              <Text style={[styles.label, { color: colors.textSecondary }]}>Vendor / Shop Name</Text>
               <TextInput
                 value={vendor}
                 onChangeText={setVendor}
                 placeholder="e.g. Sri Lakshmi Flower Decorators"
-                placeholderTextColor={COLORS.textMuted}
-                style={styles.input}
+                placeholderTextColor={colors.textMuted}
+                style={[styles.input, { backgroundColor: isDark ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.3)', color: colors.textPrimary, borderColor: colors.glassBorder }]}
               />
             </View>
 
             <View style={styles.group}>
-              <Text style={styles.label}>Description / Purpose</Text>
+              <Text style={[styles.label, { color: colors.textSecondary }]}>Description / Purpose</Text>
               <TextInput
                 value={description}
                 onChangeText={setDescription}
                 placeholder="e.g. Main Pandal Flowers & Arch decoration"
-                placeholderTextColor={COLORS.textMuted}
-                style={styles.input}
+                placeholderTextColor={colors.textMuted}
+                style={[styles.input, { backgroundColor: isDark ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.3)', color: colors.textPrimary, borderColor: colors.glassBorder }]}
               />
             </View>
 
             <View style={styles.group}>
-              <Text style={styles.label}>Vendor Bill Receipt Image (Proof)</Text>
-              <TouchableOpacity style={styles.uploadBtn} onPress={handlePickBill} activeOpacity={0.8}>
+              <Text style={[styles.label, { color: colors.textSecondary }]}>Vendor Bill Receipt Image (Proof)</Text>
+              <TouchableOpacity style={[styles.uploadBtn, { backgroundColor: colors.glassCard, borderColor: colors.glassBorder }]} onPress={handlePickBill} activeOpacity={0.8}>
                 {billImageUri ? (
                   <View style={{ alignItems: 'center', width: '100%' }}>
                     <Image
@@ -198,16 +230,16 @@ export default function RecordExpenseScreen() {
                       resizeMode="cover"
                     />
                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                      <Ionicons name="checkmark-circle" size={18} color={COLORS.success} />
-                      <Text style={[styles.uploadText, { color: COLORS.success, marginLeft: 6 }]}>
+                      <Ionicons name="checkmark-circle" size={18} color={colors.success} />
+                      <Text style={[styles.uploadText, { color: colors.success, marginLeft: 6 }]}>
                         Bill Image Attached — Tap to Change
                       </Text>
                     </View>
                   </View>
                 ) : (
                   <>
-                    <Ionicons name="camera-outline" size={22} color={COLORS.primaryOrange} />
-                    <Text style={styles.uploadText}>
+                    <Ionicons name="camera-outline" size={22} color={colors.primaryOrange} />
+                    <Text style={[styles.uploadText, { color: colors.textSecondary }]}>
                       Upload Bill Photo / Scan
                     </Text>
                   </>
@@ -228,34 +260,37 @@ export default function RecordExpenseScreen() {
               </LinearGradient>
             </TouchableOpacity>
           </BlurView>
+          )}
 
-          {/* Detailed Internal Expense Ledger */}
-          <Text style={styles.sectionHeader}>Internal Itemized Expense Ledger ({recordedExpenses.length})</Text>
+          {/* Internal Itemized Expense Ledger */}
+          <Text style={[styles.sectionHeader, { color: colors.textPrimary }]}>Internal Itemized Expense Ledger ({recordedExpenses.length})</Text>
           {loading ? (
-            <ActivityIndicator color={COLORS.primaryOrange} style={{ marginVertical: 14 }} />
+            <ActivityIndicator color={colors.primaryOrange} style={{ marginVertical: 14 }} />
           ) : recordedExpenses.length === 0 ? (
-            <BlurView intensity={15} tint="dark" style={styles.ledgerCard}>
-              <Text style={{ color: COLORS.textMuted, textAlign: 'center', fontSize: 12 }}>No expenses recorded in database yet.</Text>
+            <BlurView intensity={isDark ? 15 : 30} tint={isDark ? "dark" : "light"} style={[styles.ledgerCard, { borderColor: colors.glassBorder, backgroundColor: colors.glassCard, alignItems: 'center', padding: 30 }]}>
+              <Ionicons name="receipt-outline" size={48} color={colors.textMuted} style={{ marginBottom: 12 }} />
+              <Text style={{ color: colors.textSecondary, textAlign: 'center', fontSize: 14, fontWeight: '600' }}>No Expenses Logged Yet</Text>
+              <Text style={{ color: colors.textMuted, textAlign: 'center', fontSize: 12, marginTop: 4 }}>Any expenditures recorded will appear here.</Text>
             </BlurView>
           ) : (
             recordedExpenses.map((exp: any) => (
-              <BlurView key={exp.id} intensity={20} tint="dark" style={styles.ledgerCard}>
+              <BlurView key={exp.id} intensity={isDark ? 20 : 40} tint={isDark ? "dark" : "light"} style={[styles.ledgerCard, { borderColor: colors.glassBorder, backgroundColor: colors.glassCard }]}>
                 <View style={styles.ledgerHeader}>
                   <View style={styles.catBadge}>
                     <Text style={styles.catBadgeText}>{exp.category || 'OTHER'}</Text>
                   </View>
                   <Text style={styles.ledgerAmount}>-₹{(exp.amount || 0).toLocaleString('en-IN')}</Text>
                 </View>
-                <Text style={styles.vendorName}>{exp.vendor || 'Local Vendor'}</Text>
-                <Text style={styles.loggedByText}>{exp.description || 'Festival Expense'} • {exp.date ? new Date(exp.date).toLocaleDateString() : 'Today'}</Text>
+                <Text style={[styles.vendorName, { color: colors.textPrimary }]}>{exp.vendor || 'Local Vendor'}</Text>
+                <Text style={[styles.loggedByText, { color: colors.textMuted }]}>{exp.description || 'Festival Expense'} • {exp.date ? new Date(exp.date).toLocaleDateString() : 'Today'}</Text>
 
                 <TouchableOpacity
                   style={styles.viewProofBtn}
                   onPress={() => setViewingBillProof(exp)}
                   activeOpacity={0.8}
                 >
-                  <Ionicons name="image-outline" size={14} color={COLORS.primaryOrange} style={{ marginRight: 4 }} />
-                  <Text style={styles.viewProofText}>View Verified Vendor Bill Receipt Proof 🧾</Text>
+                  <Ionicons name="image-outline" size={14} color={colors.primaryOrange} style={{ marginRight: 4 }} />
+                  <Text style={[styles.viewProofText, { color: colors.primaryOrange }]}>View Verified Vendor Bill Receipt Proof 🧾</Text>
                 </TouchableOpacity>
               </BlurView>
             ))
@@ -270,48 +305,50 @@ export default function RecordExpenseScreen() {
         transparent={true}
         onRequestClose={() => setViewingBillProof(null)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Vendor Bill Receipt Proof 🧾</Text>
-              <TouchableOpacity onPress={() => setViewingBillProof(null)}>
-                <Ionicons name="close-circle" size={28} color={COLORS.textSecondary} />
-              </TouchableOpacity>
-            </View>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
+          <View style={[styles.modalOverlay, { backgroundColor: isDark ? 'rgba(10, 10, 15, 0.95)' : 'rgba(255, 255, 255, 0.9)' }]}>
+            <View style={[styles.modalContent, { backgroundColor: colors.glassCard, borderColor: colors.glassBorder }]}>
+              <View style={styles.modalHeader}>
+                <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>Vendor Bill Receipt Proof 🧾</Text>
+                <TouchableOpacity onPress={() => setViewingBillProof(null)}>
+                  <Ionicons name="close-circle" size={28} color={colors.textSecondary} />
+                </TouchableOpacity>
+              </View>
 
-            <View style={styles.modalVendorInfo}>
-              <Text style={{ color: COLORS.textPrimary, fontSize: 15, fontWeight: '700' }}>
-                {viewingBillProof?.vendor || 'Local Vendor'}
-              </Text>
-              <Text style={{ color: COLORS.error, fontSize: 16, fontWeight: '800' }}>
-                -₹{(viewingBillProof?.amount || 0).toLocaleString('en-IN')}
-              </Text>
-            </View>
-            <Text style={{ color: COLORS.textSecondary, fontSize: 12, marginBottom: 16 }}>
-              {viewingBillProof?.description || 'Festival Expense'} • {viewingBillProof?.category || 'OTHER'}
-            </Text>
-
-            {viewingBillProof?.billImageUrl || viewingBillProof?.billImageS3Url ? (
-              <ScrollView style={{ flexShrink: 1 }} showsVerticalScrollIndicator={false}>
-                <Image
-                  source={{ uri: viewingBillProof.billImageUrl || viewingBillProof.billImageS3Url }}
-                  style={{ width: '100%', height: 400, borderRadius: 12, backgroundColor: '#1A1A2E' }}
-                  resizeMode="contain"
-                />
-              </ScrollView>
-            ) : (
-              <View style={styles.noBillPlaceholder}>
-                <Ionicons name="receipt-outline" size={48} color={COLORS.textMuted} />
-                <Text style={{ color: COLORS.textMuted, marginTop: 12, textAlign: 'center', fontSize: 13 }}>
-                  No bill receipt image attached for this expense.
+              <View style={styles.modalVendorInfo}>
+                <Text style={{ color: colors.textPrimary, fontSize: 15, fontWeight: '700' }}>
+                  {viewingBillProof?.vendor || 'Local Vendor'}
                 </Text>
-                <Text style={{ color: COLORS.textMuted, marginTop: 4, textAlign: 'center', fontSize: 11 }}>
-                  Vendor bills can be attached when recording new expenses.
+                <Text style={{ color: colors.error, fontSize: 16, fontWeight: '800' }}>
+                  -₹{(viewingBillProof?.amount || 0).toLocaleString('en-IN')}
                 </Text>
               </View>
-            )}
+              <Text style={{ color: colors.textSecondary, fontSize: 12, marginBottom: 16 }}>
+                {viewingBillProof?.description || 'Festival Expense'} • {viewingBillProof?.category || 'OTHER'}
+              </Text>
+
+              {viewingBillProof?.billImageUrl || viewingBillProof?.billImageS3Url ? (
+                <ScrollView style={{ flexShrink: 1 }} showsVerticalScrollIndicator={false}>
+                  <Image
+                    source={{ uri: viewingBillProof.billImageUrl || viewingBillProof.billImageS3Url }}
+                    style={{ width: '100%', height: 400, borderRadius: 12, backgroundColor: isDark ? '#1A1A2E' : '#F1F5F9' }}
+                    resizeMode="contain"
+                  />
+                </ScrollView>
+              ) : (
+                <View style={[styles.noBillPlaceholder, { borderColor: colors.glassBorder }]}>
+                  <Ionicons name="receipt-outline" size={48} color={colors.textMuted} />
+                  <Text style={{ color: colors.textMuted, marginTop: 12, textAlign: 'center', fontSize: 13 }}>
+                    No bill receipt image attached for this expense.
+                  </Text>
+                  <Text style={{ color: colors.textMuted, marginTop: 4, textAlign: 'center', fontSize: 11 }}>
+                    Vendor bills can be attached when recording new expenses.
+                  </Text>
+                </View>
+              )}
+            </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </LinearGradient>
   );
@@ -324,6 +361,8 @@ const styles = StyleSheet.create({
   backBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: COLORS.glassCard, justifyContent: 'center', alignItems: 'center', marginRight: 12, borderWidth: 1, borderColor: COLORS.glassBorder },
   title: { fontSize: 18, fontWeight: '800', color: COLORS.textPrimary },
   subtitle: { fontSize: 11, color: COLORS.textSecondary, marginTop: 2 },
+  formToggle: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 14, borderRadius: 12, borderWidth: 1, marginBottom: 20 },
+  formToggleText: { fontSize: 13, fontWeight: '700' },
   glassCard: { borderRadius: 20, padding: 20, borderWidth: 1, borderColor: COLORS.glassBorder, backgroundColor: COLORS.glassCard, marginBottom: 24 },
   formHeading: { fontSize: 14, fontWeight: '800', color: COLORS.textPrimary, marginBottom: 14 },
   group: { marginBottom: 16 },

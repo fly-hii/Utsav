@@ -1,0 +1,160 @@
+/**
+ * Generates an HTML receipt for a donation
+ */
+export function generateReceiptHtml(donation: any, committee: any): string {
+  const dateStr = new Date(donation.date || donation.createdAt).toLocaleDateString('en-IN', {
+    day: 'numeric', month: 'long', year: 'numeric'
+  });
+  
+  return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Donation Receipt - ${donation.receiptNo}</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+        .receipt-container {
+            background-color: #fff;
+            width: 100%;
+            max-width: 600px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            overflow: hidden;
+            border-top: 6px solid #F59E0B;
+        }
+        .header {
+            text-align: center;
+            padding: 30px 20px 20px;
+            border-bottom: 2px dashed #eee;
+        }
+        .header h1 {
+            margin: 0 0 5px;
+            color: #1E1B4B;
+            font-size: 24px;
+        }
+        .header p {
+            margin: 0;
+            color: #64748B;
+            font-size: 14px;
+        }
+        .amount-box {
+            background-color: #FEF3C7;
+            padding: 15px;
+            text-align: center;
+            margin: 20px;
+            border-radius: 8px;
+            border: 1px solid #FDE68A;
+        }
+        .amount-box h2 {
+            margin: 0;
+            color: #D97706;
+            font-size: 32px;
+        }
+        .amount-box p {
+            margin: 5px 0 0;
+            color: #92400E;
+            font-size: 14px;
+            text-transform: uppercase;
+            font-weight: bold;
+        }
+        .details {
+            padding: 0 20px 20px;
+        }
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        .detail-label {
+            color: #64748B;
+            font-size: 14px;
+        }
+        .detail-value {
+            color: #0F172A;
+            font-weight: 600;
+            font-size: 14px;
+            text-align: right;
+        }
+        .footer {
+            background-color: #F8FAFC;
+            padding: 20px;
+            text-align: center;
+            font-size: 12px;
+            color: #94A3B8;
+        }
+        .print-btn {
+            display: block;
+            width: calc(100% - 40px);
+            margin: 0 20px 20px;
+            padding: 15px;
+            background-color: #0F172A;
+            color: #fff;
+            text-align: center;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 16px;
+        }
+        @media print {
+            body { background-color: #fff; padding: 0; }
+            .receipt-container { box-shadow: none; border: 1px solid #ddd; }
+            .print-btn { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="receipt-container">
+        <div class="header">
+            <h1>${committee?.name || 'Festival Committee'}</h1>
+            <p>${committee?.village ? committee.village + ', ' : ''}${committee?.district || ''}</p>
+            <p style="margin-top: 10px; font-weight: bold; color: #10B981;">OFFICIAL DONATION RECEIPT</p>
+        </div>
+        
+        <div class="amount-box">
+            <h2>₹${donation.amount}</h2>
+            <p>Successful Donation</p>
+        </div>
+
+        <div class="details">
+            <div class="detail-row">
+                <span class="detail-label">Receipt No</span>
+                <span class="detail-value">${donation.receiptNo}</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">Date</span>
+                <span class="detail-value">${dateStr}</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">Donor Name</span>
+                <span class="detail-value">${donation.donorName || 'Anonymous'}</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">Payment Mode</span>
+                <span class="detail-value">${donation.paymentMethod}</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">Purpose</span>
+                <span class="detail-value">${donation.purpose || 'General Festival Donation'}</span>
+            </div>
+        </div>
+
+        <a href="#" class="print-btn" onclick="window.print()">Print / Save PDF</a>
+
+        <div class="footer">
+            <p>This is a computer-generated receipt. May the divine blessings be with you and your family.</p>
+            <p>Generated by Utsav App</p>
+        </div>
+    </div>
+</body>
+</html>`;
+}

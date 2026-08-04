@@ -7,6 +7,28 @@ import { View, ActivityIndicator } from 'react-native';
 import { usePushNotifications } from '../hooks/usePushNotifications';
 import { useState, useEffect } from 'react';
 import { initializeAuth } from '../services/api';
+import { ThemeProvider, useAppTheme } from '../context/ThemeContext';
+
+function RootLayoutNav() {
+  const { colors, isDark } = useAppTheme();
+  
+  return (
+    <>
+      <StatusBar style={isDark ? "light" : "dark"} />
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          contentStyle: { backgroundColor: colors.background },
+        }}
+      >
+        <Stack.Screen name="index" />
+        <Stack.Screen name="(auth)/login" />
+        <Stack.Screen name="(auth)/register" />
+        <Stack.Screen name="(main)" />
+      </Stack>
+    </>
+  );
+}
 
 export default function RootLayout() {
   const [authInitialized, setAuthInitialized] = useState(false);
@@ -29,18 +51,9 @@ export default function RootLayout() {
 
   return (
     <SafeAreaProvider>
-      <StatusBar style="light" />
-      <Stack
-        screenOptions={{
-          headerShown: false,
-          contentStyle: { backgroundColor: '#0F0F1A' },
-        }}
-      >
-        <Stack.Screen name="index" />
-        <Stack.Screen name="(auth)/login" />
-        <Stack.Screen name="(auth)/register" />
-        <Stack.Screen name="(main)" />
-      </Stack>
+      <ThemeProvider>
+        <RootLayoutNav />
+      </ThemeProvider>
     </SafeAreaProvider>
   );
 }

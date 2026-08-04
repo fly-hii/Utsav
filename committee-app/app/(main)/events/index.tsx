@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator, Platform, KeyboardAvoidingView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator, Platform, KeyboardAvoidingView, LayoutAnimation, UIManager } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { COLORS, GRADIENTS } from '../../../constants/theme';
@@ -9,21 +9,33 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CommitteeManagementService } from '../../../services/api';
 import { useCommittee } from '../_layout';
 import { DateTimePicker } from '@expo/ui/community/datetime-picker';
+import { useAppTheme } from '../../../context/ThemeContext';
+
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 export default function ManageEventsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { colors, isDark } = useAppTheme();
   const { committeeId } = useCommittee();
 
   const [events, setEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [formExpanded, setFormExpanded] = useState(false);
 
   const [name, setName] = useState('');
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [time, setTime] = useState('');
   const [venue, setVenue] = useState('');
+
+  const toggleForm = () => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setFormExpanded(!formExpanded);
+  };
 
   const fetchEvents = async () => {
     if (!committeeId) return;
@@ -88,16 +100,16 @@ export default function ManageEventsScreen() {
   };
 
   return (
-    <LinearGradient colors={GRADIENTS.dark} style={styles.container}>
+    <LinearGradient colors={isDark ? GRADIENTS.dark : GRADIENTS.lightDark} style={styles.container}>
       {/* Navigation Header */}
       <View style={{ paddingTop: insets.top + 16, paddingHorizontal: 20, paddingBottom: 10 }}>
         <View style={styles.headerRow}>
-          <TouchableOpacity style={styles.backBtn} onPress={() => router.back()} activeOpacity={0.8}>
-            <Ionicons name="arrow-back" size={22} color={COLORS.textPrimary} />
+          <TouchableOpacity style={[styles.backBtn, { backgroundColor: colors.glassCard, borderColor: colors.glassBorder }]} onPress={() => router.back()} activeOpacity={0.8}>
+            <Ionicons name="arrow-back" size={22} color={colors.textPrimary} />
           </TouchableOpacity>
           <View style={{ flex: 1 }}>
-            <Text style={styles.title}>Festival Events Management</Text>
-            <Text style={styles.subtitle}>Create & publish festival event schedules for villagers</Text>
+            <Text style={[styles.title, { color: colors.textPrimary }]}>Festival Events Management</Text>
+            <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Create & publish festival event schedules for villagers</Text>
           </View>
         </View>
       </View>
@@ -116,36 +128,56 @@ export default function ManageEventsScreen() {
           showsVerticalScrollIndicator={false}
         >
 
+          {/* Collapsible Form Header */}
+          <TouchableOpacity
+            style={[styles.formToggle, { backgroundColor: `${colors.primaryOrange}1A`, borderColor: `${colors.primaryOrange}4D`, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 14, borderRadius: 12, borderWidth: 1, marginBottom: 20 }]}
+            onPress={toggleForm}
+            activeOpacity={0.8}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Ionicons name="calendar-outline" size={20} color={colors.primaryOrange} style={{ marginRight: 8 }} />
+              <Text style={[{ fontSize: 13, fontWeight: '700' }, { color: colors.primaryOrange }]}>
+                {formExpanded ? 'Collapse Form' : 'Add New Event'}
+              </Text>
+            </View>
+            <Ionicons
+              name={formExpanded ? 'chevron-up' : 'chevron-down'}
+              size={20}
+              color={colors.primaryOrange}
+            />
+          </TouchableOpacity>
+
           {/* Add Event Form */}
-          <BlurView intensity={20} tint="dark" style={styles.glassCard}>
-            <Text style={styles.formHeading}>Add New Festival Program</Text>
+          {formExpanded && (
+          <BlurView intensity={isDark ? 20 : 40} tint={isDark ? "dark" : "light"} style={[styles.glassCard, { borderColor: colors.glassBorder, backgroundColor: colors.glassCard }]}>
+            <Text style={[styles.formHeading, { color: colors.textPrimary }]}>Add New Festival Program</Text>
 
             <View style={styles.group}>
-              <Text style={styles.label}>Event Title / Ritual Name *</Text>
-              <TextInput value={name} onChangeText={setName} placeholder="e.g. Sitarama Kalyana Utsavam" placeholderTextColor={COLORS.textMuted} style={styles.input} />
+              <Text style={[styles.label, { color: colors.textSecondary }]}>Event Title / Ritual Name *</Text>
+              <TextInput value={name} onChangeText={setName} placeholder="e.g. Sitarama Kalyana Utsavam" placeholderTextColor={colors.textMuted} style={[styles.input, { backgroundColor: isDark ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.3)', color: colors.textPrimary, borderColor: colors.glassBorder }]} />
             </View>
 
             <View style={styles.row}>
               <View style={[styles.group, { flex: 1 }]}>
-                <Text style={styles.label}>Date * 📅</Text>
+                <Text style={[styles.label, { color: colors.textSecondary }]}>Date * 📅</Text>
                 <TouchableOpacity
-                  style={styles.datePickerBtn}
+                  style={[styles.datePickerBtn, { backgroundColor: colors.glassCard, borderColor: colors.primaryOrange }]}
                   onPress={() => setShowDatePicker(!showDatePicker)}
                   activeOpacity={0.8}
                 >
-                  <Ionicons name="calendar-outline" size={18} color={COLORS.primaryOrange} style={{ marginRight: 8 }} />
-                  <Text style={styles.datePickerText}>{formatDisplayDate(selectedDate)}</Text>
+                  <Ionicons name="calendar-outline" size={18} color={colors.primaryOrange} style={{ marginRight: 8 }} />
+                  <Text style={[styles.datePickerText, { color: colors.textPrimary }]}>{formatDisplayDate(selectedDate)}</Text>
                 </TouchableOpacity>
               </View>
               <View style={[styles.group, { flex: 1 }]}>
-                <Text style={styles.label}>Time</Text>
-                <TextInput value={time} onChangeText={setTime} placeholder="09:00 AM" placeholderTextColor={COLORS.textMuted} style={styles.input} />
+                <Text style={[styles.label, { color: colors.textSecondary }]}>Time</Text>
+                <TextInput value={time} onChangeText={setTime} placeholder="09:00 AM" placeholderTextColor={colors.textMuted} style={[styles.input, { backgroundColor: isDark ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.3)', color: colors.textPrimary, borderColor: colors.glassBorder }]} />
               </View>
             </View>
 
             {/* Calendar Date Picker */}
             {showDatePicker && (
-              <View style={styles.calendarContainer}>
+              <View style={[styles.calendarContainer, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)', borderColor: colors.glassBorder }]}>
                 <DateTimePicker
                   mode="date"
                   value={selectedDate}
@@ -158,7 +190,7 @@ export default function ManageEventsScreen() {
                 />
                 {Platform.OS === 'ios' && (
                   <TouchableOpacity
-                    style={styles.doneDateBtn}
+                    style={[styles.doneDateBtn, { backgroundColor: colors.primaryOrange }]}
                     onPress={() => setShowDatePicker(false)}
                     activeOpacity={0.8}
                   >
@@ -169,8 +201,8 @@ export default function ManageEventsScreen() {
             )}
 
             <View style={styles.group}>
-              <Text style={styles.label}>Venue / Stage Location</Text>
-              <TextInput value={venue} onChangeText={setVenue} placeholder="e.g. Temple Grounds Main Pandal" placeholderTextColor={COLORS.textMuted} style={styles.input} />
+              <Text style={[styles.label, { color: colors.textSecondary }]}>Venue / Stage Location</Text>
+              <TextInput value={venue} onChangeText={setVenue} placeholder="e.g. Temple Grounds Main Pandal" placeholderTextColor={colors.textMuted} style={[styles.input, { backgroundColor: isDark ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.3)', color: colors.textPrimary, borderColor: colors.glassBorder }]} />
             </View>
 
             <TouchableOpacity style={styles.addBtn} onPress={handleAddEvent} disabled={submitting} activeOpacity={0.85}>
@@ -186,24 +218,27 @@ export default function ManageEventsScreen() {
               </LinearGradient>
             </TouchableOpacity>
           </BlurView>
+          )}
 
           {/* Existing Scheduled Events */}
-          <Text style={styles.sectionHeader}>Scheduled Programs ({events.length})</Text>
+          <Text style={[styles.sectionHeader, { color: colors.textPrimary }]}>Scheduled Programs ({events.length})</Text>
           {loading ? (
-            <ActivityIndicator color={COLORS.primaryOrange} style={{ marginVertical: 14 }} />
+            <ActivityIndicator color={colors.primaryOrange} style={{ marginVertical: 14 }} />
           ) : events.length === 0 ? (
-            <BlurView intensity={15} tint="dark" style={styles.eventItem}>
-              <Text style={{ color: COLORS.textMuted, textAlign: 'center', fontSize: 12 }}>No festival programs scheduled in database yet.</Text>
+            <BlurView intensity={isDark ? 15 : 30} tint={isDark ? "dark" : "light"} style={[styles.eventItem, { borderColor: colors.glassBorder, backgroundColor: colors.glassCard, alignItems: 'center', padding: 30 }]}>
+              <Ionicons name="calendar-outline" size={48} color={colors.textMuted} style={{ marginBottom: 12 }} />
+              <Text style={{ color: colors.textSecondary, textAlign: 'center', fontSize: 14, fontWeight: '600' }}>No Events Scheduled</Text>
+              <Text style={{ color: colors.textMuted, textAlign: 'center', fontSize: 12, marginTop: 4 }}>Add an event above to broadcast to villagers.</Text>
             </BlurView>
           ) : (
             events.map((ev: any) => (
-              <BlurView key={ev.id} intensity={20} tint="dark" style={styles.eventItem}>
+              <BlurView key={ev.id} intensity={isDark ? 20 : 40} tint={isDark ? "dark" : "light"} style={[styles.eventItem, { borderColor: colors.glassBorder, backgroundColor: colors.glassCard }]}>
                 <View style={styles.eventLeft}>
-                  <Ionicons name="calendar-outline" size={24} color={COLORS.primaryOrange} />
+                  <Ionicons name="calendar-outline" size={24} color={colors.primaryOrange} />
                   <View style={{ marginLeft: 12 }}>
-                    <Text style={styles.eventName}>{ev.name}</Text>
-                    <Text style={styles.eventSub}>{ev.venue || 'Temple Premises'} • {ev.time || '09:00 AM'}</Text>
-                    <Text style={styles.eventDate}>📆 {ev.date ? new Date(ev.date).toLocaleDateString() : 'Upcoming'}</Text>
+                    <Text style={[styles.eventName, { color: colors.textPrimary }]}>{ev.name}</Text>
+                    <Text style={[styles.eventSub, { color: colors.textSecondary }]}>{ev.venue || 'Temple Premises'} • {ev.time || '09:00 AM'}</Text>
+                    <Text style={[styles.eventDate, { color: colors.gold }]}>📆 {ev.date ? new Date(ev.date).toLocaleDateString() : 'Upcoming'}</Text>
                   </View>
                 </View>
               </BlurView>
@@ -222,6 +257,7 @@ const styles = StyleSheet.create({
   backBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: COLORS.glassCard, justifyContent: 'center', alignItems: 'center', marginRight: 12, borderWidth: 1, borderColor: COLORS.glassBorder },
   title: { fontSize: 20, fontWeight: '800', color: COLORS.textPrimary },
   subtitle: { fontSize: 12, color: COLORS.textSecondary, marginTop: 2 },
+  formToggle: { padding: 14, borderRadius: 12, borderWidth: 1, marginBottom: 20 },
   glassCard: { borderRadius: 20, padding: 20, borderWidth: 1, borderColor: COLORS.glassBorder, backgroundColor: COLORS.glassCard, marginBottom: 24 },
   formHeading: { fontSize: 14, fontWeight: '800', color: COLORS.textPrimary, marginBottom: 14 },
   group: { marginBottom: 14 },

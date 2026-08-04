@@ -3,13 +3,15 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert,
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
-import { COLORS, GRADIENTS } from '../../constants/theme';
+import { GRADIENTS } from '../../constants/theme';
 import { CommitteeAuthService } from '../../services/api';
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
+import { useAppTheme } from '../../context/ThemeContext';
 
 export default function CommitteeRegisterScreen() {
   const router = useRouter();
+  const { colors, isDark } = useAppTheme();
   const [name, setName] = useState('');
   const [templeName, setTempleName] = useState('');
   const [festivalName, setFestivalName] = useState('');
@@ -25,6 +27,43 @@ export default function CommitteeRegisterScreen() {
   const [gpsStatus, setGpsStatus] = useState('Detecting GPS location...');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  
+  // OTP States
+  const [otpSent, setOtpSent] = useState(false);
+  const [otp, setOtp] = useState('');
+  const [countdown, setCountdown] = useState(0);
+  const [sendingOtp, setSendingOtp] = useState(false);
+
+  const startCountdown = () => {
+    setCountdown(60);
+    const interval = setInterval(() => {
+      setCountdown((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
+  const handleSendOtp = async () => {
+    if (phone.length !== 10) {
+      Alert.alert('Invalid Phone', 'Please enter a valid 10-digit mobile number.');
+      return;
+    }
+    try {
+      setSendingOtp(true);
+      await CommitteeAuthService.sendOtp(phone, 'REGISTER');
+      setOtpSent(true);
+      startCountdown();
+      Alert.alert('OTP Sent', 'Please check your SMS for the 6-digit OTP.');
+    } catch (err: any) {
+      Alert.alert('Error', err?.response?.data?.message || err?.message || 'Failed to send OTP.');
+    } finally {
+      setSendingOtp(false);
+    }
+  };
 
   useEffect(() => {
     async function captureTempleGps() {
@@ -48,9 +87,17 @@ export default function CommitteeRegisterScreen() {
 
         if (reverse && reverse.length > 0) {
           const p = reverse[0];
-          if (p.city || p.subregion) setVillage(p.city || p.subregion || '');
-          if (p.district) setDistrict(p.district);
-          if (p.region) setState(p.region);
+          
+          // Improved mapping for Indian addresses from Expo Location
+          const locVillage = p.city || p.street || p.name || p.subregion || '';
+          const locMandal = p.subregion || p.city || '';
+          const locDistrict = p.district || p.subregion || '';
+          const locState = p.region || 'Andhra Pradesh';
+
+          if (locVillage) setVillage(locVillage);
+          if (locMandal) setMandal(locMandal);
+          if (locDistrict) setDistrict(locDistrict);
+          if (locState) setState(locState);
         }
       } catch (err) {
         setGpsStatus('Default GPS Coordinates');
@@ -61,8 +108,8 @@ export default function CommitteeRegisterScreen() {
   }, []);
 
   const handleRegisterSubmit = async () => {
-    if (!name || !templeName || !village || !presidentName || !phone || !password) {
-      Alert.alert('Validation Error', 'Please fill in all required fields marked with *.');
+    if (!name || !templeName || !village || !presidentName || !phone || !password || !otp) {
+      Alert.alert('Validation Error', 'Please fill in all required fields marked with *, and verify your phone number with OTP.');
       return;
     }
 
@@ -83,6 +130,7 @@ export default function CommitteeRegisterScreen() {
         secretaryName: secretaryName || 'Committee Secretary',
         phone,
         password,
+        otp,
       });
 
       Alert.alert(
@@ -101,7 +149,7 @@ export default function CommitteeRegisterScreen() {
   };
 
   return (
-    <LinearGradient colors={GRADIENTS.dark} style={styles.container}>
+    <LinearGradient colors={isDark ? GRADIENTS.dark : GRADIENTS.lightDark} style={styles.container}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -113,78 +161,112 @@ export default function CommitteeRegisterScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.header}>
-          <Text style={styles.title}>Register Village Committee 🛕</Text>
-          <Text style={styles.subtitle}>Automatic GPS location detection & document verification</Text>
+          <Text style={[styles.title, { color: colors.textPrimary }]}>Register Village Committee 🛕</Text>
+          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Automatic GPS location detection & document verification</Text>
         </View>
 
-        <BlurView intensity={20} tint="dark" style={styles.glassCard}>
+        <BlurView intensity={isDark ? 20 : 40} tint={isDark ? "dark" : "light"} style={[styles.glassCard, { borderColor: colors.glassBorder, backgroundColor: colors.glassCard }]}>
           {/* GPS Location Tag */}
-          <View style={styles.gpsBanner}>
-            <Text style={styles.gpsText}>📍 {gpsStatus}</Text>
+          <View style={[styles.gpsBanner, { backgroundColor: `${colors.success}26`, borderColor: `${colors.success}4D` }]}>
+            <Text style={[styles.gpsText, { color: colors.success }]}>📍 {gpsStatus}</Text>
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Committee Name *</Text>
-            <TextInput value={name} onChangeText={setName} placeholder="e.g. Sri Rama Youth Committee" placeholderTextColor={COLORS.textMuted} style={styles.input} />
+            <Text style={[styles.label, { color: colors.textSecondary }]}>Committee Name *</Text>
+            <TextInput value={name} onChangeText={setName} placeholder="e.g. Sri Rama Youth Committee" placeholderTextColor={colors.textMuted} style={[styles.input, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)', color: colors.textPrimary, borderColor: colors.glassBorder }]} />
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Temple Name *</Text>
-            <TextInput value={templeName} onChangeText={setTempleName} placeholder="e.g. Sri Seetha Ramachandra Swamy Temple" placeholderTextColor={COLORS.textMuted} style={styles.input} />
+            <Text style={[styles.label, { color: colors.textSecondary }]}>Temple Name *</Text>
+            <TextInput value={templeName} onChangeText={setTempleName} placeholder="e.g. Sri Seetha Ramachandra Swamy Temple" placeholderTextColor={colors.textMuted} style={[styles.input, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)', color: colors.textPrimary, borderColor: colors.glassBorder }]} />
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Festival Name</Text>
-            <TextInput value={festivalName} onChangeText={setFestivalName} placeholder="e.g. Sri Rama Navami Utsavam" placeholderTextColor={COLORS.textMuted} style={styles.input} />
+            <Text style={[styles.label, { color: colors.textSecondary }]}>Festival Name</Text>
+            <TextInput value={festivalName} onChangeText={setFestivalName} placeholder="e.g. Sri Rama Navami Utsavam" placeholderTextColor={colors.textMuted} style={[styles.input, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)', color: colors.textPrimary, borderColor: colors.glassBorder }]} />
           </View>
 
           <View style={styles.row}>
             <View style={[styles.inputGroup, { flex: 1, marginRight: 8 }]}>
-              <Text style={styles.label}>Village *</Text>
-              <TextInput value={village} onChangeText={setVillage} placeholder="Kovvur" placeholderTextColor={COLORS.textMuted} style={styles.input} />
+              <Text style={[styles.label, { color: colors.textSecondary }]}>Village *</Text>
+              <TextInput value={village} onChangeText={setVillage} placeholder="Kovvur" placeholderTextColor={colors.textMuted} style={[styles.input, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)', color: colors.textPrimary, borderColor: colors.glassBorder }]} />
             </View>
             <View style={[styles.inputGroup, { flex: 1 }]}>
-              <Text style={styles.label}>Mandal</Text>
-              <TextInput value={mandal} onChangeText={setMandal} placeholder="Kovvur" placeholderTextColor={COLORS.textMuted} style={styles.input} />
+              <Text style={[styles.label, { color: colors.textSecondary }]}>Mandal</Text>
+              <TextInput value={mandal} onChangeText={setMandal} placeholder="Kovvur" placeholderTextColor={colors.textMuted} style={[styles.input, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)', color: colors.textPrimary, borderColor: colors.glassBorder }]} />
             </View>
           </View>
 
           <View style={styles.row}>
             <View style={[styles.inputGroup, { flex: 1, marginRight: 8 }]}>
-              <Text style={styles.label}>District</Text>
-              <TextInput value={district} onChangeText={setDistrict} placeholder="West Godavari" placeholderTextColor={COLORS.textMuted} style={styles.input} />
+              <Text style={[styles.label, { color: colors.textSecondary }]}>District</Text>
+              <TextInput value={district} onChangeText={setDistrict} placeholder="West Godavari" placeholderTextColor={colors.textMuted} style={[styles.input, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)', color: colors.textPrimary, borderColor: colors.glassBorder }]} />
             </View>
             <View style={[styles.inputGroup, { flex: 1 }]}>
-              <Text style={styles.label}>State</Text>
-              <TextInput value={state} onChangeText={setState} placeholder="Andhra Pradesh" placeholderTextColor={COLORS.textMuted} style={styles.input} />
+              <Text style={[styles.label, { color: colors.textSecondary }]}>State</Text>
+              <TextInput value={state} onChangeText={setState} placeholder="Andhra Pradesh" placeholderTextColor={colors.textMuted} style={[styles.input, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)', color: colors.textPrimary, borderColor: colors.glassBorder }]} />
             </View>
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>President Name *</Text>
-            <TextInput value={presidentName} onChangeText={setPresidentName} placeholder="e.g. M. Subba Rao" placeholderTextColor={COLORS.textMuted} style={styles.input} />
+            <Text style={[styles.label, { color: colors.textSecondary }]}>President Name *</Text>
+            <TextInput value={presidentName} onChangeText={setPresidentName} placeholder="e.g. M. Subba Rao" placeholderTextColor={colors.textMuted} style={[styles.input, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)', color: colors.textPrimary, borderColor: colors.glassBorder }]} />
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Secretary Name</Text>
-            <TextInput value={secretaryName} onChangeText={setSecretaryName} placeholder="e.g. K. Srinivasa Varma" placeholderTextColor={COLORS.textMuted} style={styles.input} />
+            <Text style={[styles.label, { color: colors.textSecondary }]}>Secretary Name</Text>
+            <TextInput value={secretaryName} onChangeText={setSecretaryName} placeholder="e.g. K. Srinivasa Varma" placeholderTextColor={colors.textMuted} style={[styles.input, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)', color: colors.textPrimary, borderColor: colors.glassBorder }]} />
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Phone Number (Admin Login) *</Text>
-            <TextInput value={phone} onChangeText={setPhone} placeholder="10-digit mobile number" placeholderTextColor={COLORS.textMuted} keyboardType="phone-pad" style={styles.input} />
+            <Text style={[styles.label, { color: colors.textSecondary }]}>Phone Number (Admin Login) *</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <TextInput 
+                value={phone} 
+                onChangeText={(val) => { setPhone(val); setOtpSent(false); setOtp(''); }} 
+                placeholder="10-digit mobile number" 
+                placeholderTextColor={colors.textMuted} 
+                keyboardType="phone-pad" 
+                maxLength={10}
+                style={[styles.input, { flex: 1, marginRight: 8, backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)', color: colors.textPrimary, borderColor: colors.glassBorder }]} 
+              />
+              <TouchableOpacity 
+                style={[styles.verifyBtn, { backgroundColor: colors.primaryOrange }, (sendingOtp || countdown > 0) && [styles.disabledBtn, { backgroundColor: colors.textMuted }]]} 
+                onPress={handleSendOtp}
+                disabled={sendingOtp || countdown > 0}
+              >
+                {sendingOtp ? <ActivityIndicator color={colors.textPrimary} size="small" /> : (
+                  <Text style={[styles.verifyBtnText, { color: colors.cream }]}>{countdown > 0 ? `${countdown}s` : (otpSent ? 'Resend' : 'Verify')}</Text>
+                )}
+              </TouchableOpacity>
+            </View>
           </View>
 
+          {otpSent && (
+            <View style={styles.inputGroup}>
+              <Text style={[styles.label, { color: colors.textSecondary }]}>6-Digit OTP *</Text>
+              <TextInput 
+                value={otp} 
+                onChangeText={setOtp} 
+                placeholder="Enter 6-digit OTP" 
+                placeholderTextColor={colors.textMuted} 
+                keyboardType="number-pad"
+                maxLength={6} 
+                style={[styles.input, styles.otpInputStyle, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)', color: colors.textPrimary, borderColor: colors.glassBorder }]} 
+              />
+            </View>
+          )}
+
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Account Password *</Text>
-            <View style={styles.passwordContainer}>
+            <Text style={[styles.label, { color: colors.textSecondary }]}>Account Password *</Text>
+            <View style={[styles.passwordContainer, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)', borderColor: colors.glassBorder }]}>
               <TextInput
                 value={password}
                 onChangeText={setPassword}
                 placeholder="Create secure password"
-                placeholderTextColor={COLORS.textMuted}
+                placeholderTextColor={colors.textMuted}
                 secureTextEntry={!showPassword}
-                style={styles.passwordInput}
+                style={[styles.passwordInput, { color: colors.textPrimary }]}
               />
               <TouchableOpacity
                 onPress={() => setShowPassword(!showPassword)}
@@ -194,7 +276,7 @@ export default function CommitteeRegisterScreen() {
                 <Ionicons
                   name={showPassword ? 'eye-off-outline' : 'eye-outline'}
                   size={20}
-                  color={COLORS.textSecondary}
+                  color={colors.textSecondary}
                 />
               </TouchableOpacity>
             </View>
@@ -205,7 +287,7 @@ export default function CommitteeRegisterScreen() {
               {loading ? (
                 <ActivityIndicator color="#FFF" />
               ) : (
-                <Text style={styles.submitText}>Submit GPS Registration Request 🚀</Text>
+                <Text style={[styles.submitText, { color: '#FFF' }]}>Submit GPS Registration Request</Text>
               )}
             </LinearGradient>
           </TouchableOpacity>
@@ -220,30 +302,27 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   scrollContent: { padding: 20, paddingTop: 50, paddingBottom: 80 },
   header: { marginBottom: 20 },
-  title: { fontSize: 22, fontWeight: '800', color: COLORS.textPrimary },
-  subtitle: { fontSize: 12, color: COLORS.textSecondary, marginTop: 4 },
-  glassCard: { borderRadius: 20, padding: 20, borderWidth: 1, borderColor: COLORS.glassBorder, backgroundColor: COLORS.glassCard },
-  gpsBanner: { backgroundColor: 'rgba(6, 214, 160, 0.15)', borderRadius: 10, padding: 10, marginBottom: 14, borderWidth: 1, borderColor: 'rgba(6, 214, 160, 0.3)' },
-  gpsText: { fontSize: 11, fontWeight: '700', color: COLORS.success },
+  title: { fontSize: 22, fontWeight: '800' },
+  subtitle: { fontSize: 12, marginTop: 4 },
+  glassCard: { borderRadius: 20, padding: 20, borderWidth: 1 },
+  gpsBanner: { borderRadius: 10, padding: 10, marginBottom: 14, borderWidth: 1 },
+  gpsText: { fontSize: 11, fontWeight: '700' },
   inputGroup: { marginBottom: 14 },
   row: { flexDirection: 'row' },
-  label: { fontSize: 11, fontWeight: '700', color: COLORS.textSecondary, marginBottom: 4 },
-  input: { backgroundColor: 'rgba(255, 255, 255, 0.08)', borderRadius: 12, padding: 12, color: COLORS.textPrimary, borderWidth: 1, borderColor: COLORS.glassBorder },
+  label: { fontSize: 11, fontWeight: '700', marginBottom: 4 },
+  input: { borderRadius: 12, padding: 12, borderWidth: 1 },
   submitBtn: { marginTop: 12, borderRadius: 14, overflow: 'hidden' },
   submitGradient: { paddingVertical: 16, alignItems: 'center' },
-  submitText: { color: COLORS.textPrimary, fontWeight: '800', fontSize: 14 },
+  submitText: { fontWeight: '800', fontSize: 14 },
   passwordContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     borderWidth: 1,
-    borderColor: COLORS.glassBorder,
     borderRadius: 12,
   },
   passwordInput: {
     flex: 1,
     padding: 12,
-    color: COLORS.textPrimary,
     fontSize: 13,
   },
   eyeBtn: {
@@ -252,4 +331,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  verifyBtn: {
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    height: 48,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  disabledBtn: { opacity: 0.6 },
+  verifyBtnText: { fontWeight: '700', fontSize: 13 },
+  otpInputStyle: { fontSize: 18, letterSpacing: 4, fontWeight: '700', textAlign: 'center' },
 });

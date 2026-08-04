@@ -9,10 +9,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CommitteeManagementService } from '../../../services/api';
 import { useCommittee } from '../_layout';
 import { generateAuditReportPDF } from '../../../utils/pdfGenerator';
+import { useAppTheme } from '../../../context/ThemeContext';
 
 export default function CommitteeReportsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { colors, isDark } = useAppTheme();
   const { committeeId, committeeDetails } = useCommittee();
   const [loading, setLoading] = useState(true);
 
@@ -90,16 +92,16 @@ export default function CommitteeReportsScreen() {
   };
 
   return (
-    <LinearGradient colors={GRADIENTS.dark} style={styles.container}>
+    <LinearGradient colors={isDark ? GRADIENTS.dark : GRADIENTS.lightDark} style={styles.container}>
       {/* Navigation Header */}
       <View style={{ paddingTop: insets.top + 16, paddingHorizontal: 20, paddingBottom: 10 }}>
         <View style={styles.headerRow}>
-          <TouchableOpacity style={styles.backBtn} onPress={() => router.back()} activeOpacity={0.8}>
-            <Ionicons name="arrow-back" size={22} color={COLORS.textPrimary} />
+          <TouchableOpacity style={[styles.backBtn, { backgroundColor: colors.glassCard, borderColor: colors.glassBorder }]} onPress={() => router.back()} activeOpacity={0.8}>
+            <Ionicons name="arrow-back" size={22} color={colors.textPrimary} />
           </TouchableOpacity>
           <View style={{ flex: 1 }}>
-            <Text style={styles.title}>Financial Audit Statement</Text>
-            <Text style={styles.subtitle}>Transparent village audit & expense category breakdown</Text>
+            <Text style={[styles.title, { color: colors.textPrimary }]}>Financial Audit Statement</Text>
+            <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Transparent village audit & expense category breakdown</Text>
           </View>
         </View>
       </View>
@@ -113,7 +115,7 @@ export default function CommitteeReportsScreen() {
 
 
         {loading ? (
-          <ActivityIndicator color={COLORS.primaryOrange} style={{ marginVertical: 30 }} />
+          <ActivityIndicator color={colors.primaryOrange} style={{ marginVertical: 30 }} />
         ) : (
           <>
             <LinearGradient colors={GRADIENTS.gold} style={styles.summaryCard}>
@@ -131,10 +133,10 @@ export default function CommitteeReportsScreen() {
               <Text style={styles.pdfBtnText}>Export Audited PDF Statement</Text>
             </TouchableOpacity>
 
-            <Text style={styles.sectionTitle}>Expenditure Breakdown</Text>
+            <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Expenditure Breakdown</Text>
             {report.categories.map((c) => (
-              <BlurView key={c.category} intensity={20} tint="dark" style={styles.catCard}>
-                <Text style={styles.catName}>{c.category}</Text>
+              <BlurView key={c.category} intensity={isDark ? 20 : 40} tint={isDark ? "dark" : "light"} style={[styles.catCard, { borderColor: colors.glassBorder, backgroundColor: colors.glassCard }]}>
+                <Text style={[styles.catName, { color: colors.textPrimary }]}>{c.category}</Text>
                 <Text style={styles.catAmount}>₹{c.amount.toLocaleString('en-IN')}</Text>
               </BlurView>
             ))}

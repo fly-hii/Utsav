@@ -2,7 +2,7 @@ import { Tabs } from 'expo-router';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { COLORS } from '../../constants/theme';
+import { useAppTheme } from '../../context/ThemeContext';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 
 const TAB_CONFIG: Record<string, { label: string; iconActive: string; iconInactive: string }> = {
@@ -16,10 +16,17 @@ const TAB_CONFIG: Record<string, { label: string; iconActive: string; iconInacti
 
 function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
+  const { colors, isDark } = useAppTheme();
+
+  const isReels = state.routes[state.index].name === 'reels/index';
 
   return (
-    <View style={[styles.tabBarWrapper, { paddingBottom: Math.max(insets.bottom, 6) }]}>
-      <View style={styles.tabBarContainer}>
+    <View style={[
+      styles.tabBarWrapper, 
+      { paddingBottom: Math.max(insets.bottom, 6), backgroundColor: isDark ? '#0A0A0F' : '#F8FAFC' },
+      isReels && { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: 'transparent' }
+    ]}>
+      <View style={[styles.tabBarContainer, { backgroundColor: isReels ? 'rgba(0,0,0,0.4)' : colors.glassCard, borderColor: isReels ? 'rgba(255,255,255,0.1)' : colors.glassBorder }]}>
         {state.routes.map((route, index) => {
           const config = TAB_CONFIG[route.name];
           if (!config) return null;
@@ -37,14 +44,14 @@ function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
               key={route.key}
               onPress={onPress}
               activeOpacity={0.7}
-              style={[styles.tabItem, isFocused && styles.tabItemActive]}
+              style={[styles.tabItem, isFocused && { backgroundColor: `${colors.gold}26` }]} // 15% opacity
             >
               <Ionicons
                 name={isFocused ? config.iconActive as any : config.iconInactive as any}
                 size={20}
-                color={isFocused ? COLORS.gold : 'rgba(255,255,255,0.35)'}
+                color={isFocused ? colors.gold : colors.textMuted}
               />
-              <Text style={[styles.tabLabel, isFocused && styles.tabLabelActive]}>
+              <Text style={[styles.tabLabel, { color: colors.textSecondary }, isFocused && { color: colors.gold, fontWeight: '700' }]}>
                 {config.label}
               </Text>
             </TouchableOpacity>
@@ -74,7 +81,6 @@ export default function MainLayout() {
 
 const styles = StyleSheet.create({
   tabBarWrapper: {
-    backgroundColor: '#0A0A0F',
     paddingHorizontal: 12,
     paddingTop: 6,
   },
@@ -82,12 +88,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-around',
-    backgroundColor: 'rgba(255,255,255,0.06)',
     borderRadius: 16,
     paddingVertical: 6,
     paddingHorizontal: 4,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
   },
   tabItem: {
     alignItems: 'center',
@@ -96,17 +100,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     borderRadius: 12,
   },
-  tabItemActive: {
-    backgroundColor: 'rgba(245,158,11,0.15)',
-  },
   tabLabel: {
     fontSize: 9,
     fontWeight: '600',
-    color: 'rgba(255,255,255,0.3)',
     marginTop: 2,
-  },
-  tabLabelActive: {
-    color: COLORS.gold,
-    fontWeight: '700',
   },
 });

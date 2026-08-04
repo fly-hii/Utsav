@@ -47,7 +47,8 @@
     "ios": {
       "bundleIdentifier": "com.mohanflyhii.utsavuser",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "CFBundleDisplayName": "Utsav User"
       }
     }
   }

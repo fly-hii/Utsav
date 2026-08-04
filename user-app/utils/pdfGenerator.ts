@@ -1,6 +1,7 @@
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import { documentDirectory, writeAsStringAsync, EncodingType } from 'expo-file-system/legacy';
+import { Alert } from 'react-native';
 
 export const generateDonationReceiptPDF = async (committeeDetails: any, donation: any) => {
   const html = `
@@ -57,7 +58,18 @@ export const generateDonationReceiptPDF = async (committeeDetails: any, donation
     if (base64) {
       await writeAsStringAsync(newUri, base64, { encoding: EncodingType.Base64 });
     }
-    await Sharing.shareAsync(newUri, { UTI: '.pdf', mimeType: 'application/pdf', dialogTitle: 'Share Donation Receipt' });
+    
+    Alert.alert(
+      'Downloaded Successfully ✅',
+      'Your receipt has been generated successfully. Do you want to share or view it?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Share / View', 
+          onPress: () => Sharing.shareAsync(newUri, { UTI: '.pdf', mimeType: 'application/pdf', dialogTitle: 'Share Donation Receipt' }) 
+        }
+      ]
+    );
   } catch (error) {
     console.error('Failed to generate PDF:', error);
     throw error;

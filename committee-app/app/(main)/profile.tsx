@@ -8,10 +8,12 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CommitteeAuthService, CommitteeManagementService } from '../../services/api';
 import * as ImagePicker from 'expo-image-picker';
+import { useAppTheme } from '../../context/ThemeContext';
 
 export default function CommitteeProfileScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { colors, isDark, theme, setTheme } = useAppTheme();
 
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -180,16 +182,16 @@ export default function CommitteeProfileScreen() {
   );
 
   return (
-    <LinearGradient colors={GRADIENTS.dark} style={styles.container}>
+    <LinearGradient colors={isDark ? GRADIENTS.dark : GRADIENTS.lightDark} style={styles.container}>
       {/* Navigation Header */}
       <View style={{ paddingTop: insets.top + 16, paddingHorizontal: 20, paddingBottom: 10 }}>
         <View style={styles.headerRow}>
-          <TouchableOpacity style={styles.backBtn} onPress={() => router.back()} activeOpacity={0.8}>
-            <Ionicons name="arrow-back" size={22} color={COLORS.textPrimary} />
+          <TouchableOpacity style={[styles.backBtn, { backgroundColor: colors.glassCard, borderColor: colors.glassBorder }]} onPress={() => router.back()} activeOpacity={0.8}>
+            <Ionicons name="arrow-back" size={22} color={colors.textPrimary} />
           </TouchableOpacity>
           <View style={{ flex: 1 }}>
-            <Text style={styles.title}>Committee Officer Profile 🛕</Text>
-            <Text style={styles.subtitle}>Administrative security & credential settings</Text>
+            <Text style={[styles.title, { color: colors.textPrimary }]}>Committee Officer Profile 🛕</Text>
+            <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Administrative security & credential settings</Text>
           </View>
         </View>
       </View>
@@ -210,41 +212,66 @@ export default function CommitteeProfileScreen() {
 
 
           {loading ? (
-            <ActivityIndicator color={COLORS.primaryOrange} style={{ marginVertical: 30 }} />
+            <ActivityIndicator color={colors.primaryOrange} style={{ marginVertical: 30 }} />
           ) : (
             <>
               {/* Officer Info Card */}
-              <BlurView intensity={25} tint="dark" style={styles.profileCard}>
+              <BlurView intensity={isDark ? 25 : 50} tint={isDark ? "dark" : "light"} style={[styles.profileCard, { backgroundColor: colors.glassCard, borderColor: colors.glassBorder }]}>
                 <View style={styles.avatarRow}>
-                  <View style={styles.avatar}>
+                  <View style={[styles.avatar, { backgroundColor: `${colors.primaryOrange}40`, borderColor: colors.primaryOrange }]}>
                     <Text style={styles.avatarText}>{(user?.name || 'O')[0].toUpperCase()}</Text>
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.userName}>{user?.name || 'Committee Officer'}</Text>
-                    <Text style={styles.userPhone}>📞 {user?.phone || 'Not set'}</Text>
-                    <Text style={styles.commTag}>🛕 Sri Rama Youth Committee</Text>
+                    <Text style={[styles.userName, { color: colors.textPrimary }]}>{user?.name || 'Committee Officer'}</Text>
+                    <Text style={[styles.userPhone, { color: colors.textSecondary }]}>📞 {user?.phone || 'Not set'}</Text>
+                    <Text style={[styles.commTag, { color: colors.gold }]}>🛕 Sri Rama Youth Committee</Text>
                   </View>
-                  <View style={styles.roleBadge}>
-                    <Text style={styles.roleText}>{user?.role || 'COMMITTEE'}</Text>
+                  <View style={[styles.roleBadge, { backgroundColor: `${colors.primaryOrange}33`, borderColor: colors.primaryOrange }]}>
+                    <Text style={[styles.roleText, { color: colors.primaryOrange }]}>{user?.role || 'COMMITTEE'}</Text>
                   </View>
                 </View>
               </BlurView>
 
+              {/* Theme Settings Card */}
+              <BlurView intensity={isDark ? 20 : 40} tint={isDark ? "dark" : "light"} style={[styles.glassCard, { backgroundColor: colors.glassCard, borderColor: colors.glassBorder }]}>
+                <Text style={[styles.cardHeader, { color: colors.textPrimary }]}>App Theme 🎨</Text>
+                
+                <View style={{ flexDirection: 'row', gap: 12 }}>
+                  <TouchableOpacity 
+                    style={[styles.themeOption, theme === 'dark' && [styles.themeOptionActive, { borderColor: colors.primaryOrange, backgroundColor: `${colors.primaryOrange}1A` }], { borderColor: colors.glassBorder, backgroundColor: colors.background }]} 
+                    onPress={() => setTheme('dark')}
+                    activeOpacity={0.8}
+                  >
+                    <Ionicons name="moon" size={24} color={theme === 'dark' ? colors.primaryOrange : colors.textSecondary} />
+                    <Text style={[styles.themeOptionText, theme === 'dark' ? { color: colors.primaryOrange } : { color: colors.textSecondary }]}>Dark Mode</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity 
+                    style={[styles.themeOption, theme === 'light' && [styles.themeOptionActive, { borderColor: colors.primaryOrange, backgroundColor: `${colors.primaryOrange}1A` }], { borderColor: colors.glassBorder, backgroundColor: colors.background }]} 
+                    onPress={() => setTheme('light')}
+                    activeOpacity={0.8}
+                  >
+                    <Ionicons name="sunny" size={24} color={theme === 'light' ? colors.primaryOrange : colors.textSecondary} />
+                    <Text style={[styles.themeOptionText, theme === 'light' ? { color: colors.primaryOrange } : { color: colors.textSecondary }]}>Light Mode</Text>
+                  </TouchableOpacity>
+                </View>
+              </BlurView>
+
               {/* QR Code Upload Card */}
-              <BlurView intensity={20} tint="dark" style={styles.glassCard}>
-                <Text style={styles.cardHeader}>Online Donation QR Code 📱</Text>
-                <Text style={[styles.subtitle, { color: COLORS.textSecondary, marginBottom: 16, fontSize: 13 }]}>
+              <BlurView intensity={isDark ? 20 : 40} tint={isDark ? "dark" : "light"} style={[styles.glassCard, { backgroundColor: colors.glassCard, borderColor: colors.glassBorder }]}>
+                <Text style={[styles.cardHeader, { color: colors.textPrimary }]}>Online Donation QR Code 📱</Text>
+                <Text style={[styles.subtitle, { color: colors.textSecondary, marginBottom: 16, fontSize: 13 }]}>
                   Upload your PhonePe or Google Pay QR code. Users will scan this to make online donations.
                 </Text>
 
                 {user?.committeeMemberships?.[0]?.qrCodeS3Url ? (
                   <View style={{ alignItems: 'center', marginBottom: 16 }}>
-                    <Image source={{ uri: user.committeeMemberships[0].qrCodeS3Url }} style={{ width: 200, height: 200, borderRadius: 12, backgroundColor: '#FFF' }} resizeMode="contain" />
+                    <Image source={{ uri: user.committeeMemberships[0].qrCodeS3Url }} style={{ width: 200, height: 200, borderRadius: 12, backgroundColor: isDark ? '#FFF' : '#F8FAFC' }} resizeMode="contain" />
                   </View>
                 ) : (
-                  <View style={{ alignItems: 'center', marginBottom: 16, padding: 20, borderWidth: 1, borderColor: COLORS.glassBorder, borderRadius: 12, borderStyle: 'dashed' }}>
-                    <Ionicons name="qr-code-outline" size={40} color={COLORS.textMuted} />
-                    <Text style={{ color: COLORS.textMuted, marginTop: 8 }}>No QR Code uploaded</Text>
+                  <View style={{ alignItems: 'center', marginBottom: 16, padding: 20, borderWidth: 1, borderColor: colors.glassBorder, borderRadius: 12, borderStyle: 'dashed' }}>
+                    <Ionicons name="qr-code-outline" size={40} color={colors.textMuted} />
+                    <Text style={{ color: colors.textMuted, marginTop: 8 }}>No QR Code uploaded</Text>
                   </View>
                 )}
 
@@ -255,7 +282,7 @@ export default function CommitteeProfileScreen() {
                     ) : (
                       <>
                         <Ionicons name="cloud-upload-outline" size={18} color="#FFF" style={{ marginRight: 6 }} />
-                        <Text style={styles.pwText}>{user?.committeeMemberships?.[0]?.qrCodeS3Url ? 'Update QR Code' : 'Upload QR Code'}</Text>
+                        <Text style={[styles.pwText, { color: '#FFF' }]}>{user?.committeeMemberships?.[0]?.qrCodeS3Url ? 'Update QR Code' : 'Upload QR Code'}</Text>
                       </>
                     )}
                   </LinearGradient>
@@ -263,20 +290,20 @@ export default function CommitteeProfileScreen() {
               </BlurView>
 
               {/* UPI ID Card */}
-              <BlurView intensity={20} tint="dark" style={styles.glassCard}>
-                <Text style={styles.cardHeader}>Direct UPI App Payment 🔗</Text>
-                <Text style={[styles.subtitle, { color: COLORS.textSecondary, marginBottom: 16, fontSize: 13 }]}>
+              <BlurView intensity={isDark ? 20 : 40} tint={isDark ? "dark" : "light"} style={[styles.glassCard, { backgroundColor: colors.glassCard, borderColor: colors.glassBorder }]}>
+                <Text style={[styles.cardHeader, { color: colors.textPrimary }]}>Direct UPI App Payment 🔗</Text>
+                <Text style={[styles.subtitle, { color: colors.textSecondary, marginBottom: 16, fontSize: 13 }]}>
                   Configure your UPI ID so users can donate directly from their installed UPI apps (PhonePe, GPay).
                 </Text>
 
                 <View style={styles.group}>
-                  <Text style={styles.label}>Committee UPI ID</Text>
+                  <Text style={[styles.label, { color: colors.textSecondary }]}>Committee UPI ID</Text>
                   <TextInput
                     value={upiId}
                     onChangeText={setUpiId}
                     placeholder="e.g. sriramayouth@ybl"
-                    placeholderTextColor={COLORS.textMuted}
-                    style={styles.input}
+                    placeholderTextColor={colors.textMuted}
+                    style={[styles.input, { backgroundColor: isDark ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.4)', color: colors.textPrimary, borderColor: colors.glassBorder }]}
                     autoCapitalize="none"
                   />
                 </View>
@@ -288,7 +315,7 @@ export default function CommitteeProfileScreen() {
                     ) : (
                       <>
                         <Ionicons name="link-outline" size={18} color="#FFF" style={{ marginRight: 6 }} />
-                        <Text style={styles.pwText}>Update UPI ID</Text>
+                        <Text style={[styles.pwText, { color: '#FFF' }]}>Update UPI ID</Text>
                       </>
                     )}
                   </LinearGradient>
@@ -296,11 +323,11 @@ export default function CommitteeProfileScreen() {
               </BlurView>
 
               {/* Change Password Card */}
-              <BlurView intensity={20} tint="dark" style={styles.glassCard}>
-                <Text style={styles.cardHeader}>Change Officer Password 🔐</Text>
+              <BlurView intensity={isDark ? 20 : 40} tint={isDark ? "dark" : "light"} style={[styles.glassCard, { backgroundColor: colors.glassCard, borderColor: colors.glassBorder }]}>
+                <Text style={[styles.cardHeader, { color: colors.textPrimary }]}>Change Officer Password 🔐</Text>
 
                 <View style={styles.group}>
-                  <Text style={styles.label}>Current Password *</Text>
+                  <Text style={[styles.label, { color: colors.textSecondary }]}>Current Password *</Text>
                   {renderPasswordInput(
                     currentPassword,
                     setCurrentPassword,
@@ -311,7 +338,7 @@ export default function CommitteeProfileScreen() {
                 </View>
 
                 <View style={styles.group}>
-                  <Text style={styles.label}>New Password *</Text>
+                  <Text style={[styles.label, { color: colors.textSecondary }]}>New Password *</Text>
                   {renderPasswordInput(
                     newPassword,
                     setNewPassword,
@@ -322,7 +349,7 @@ export default function CommitteeProfileScreen() {
                 </View>
 
                 <View style={styles.group}>
-                  <Text style={styles.label}>Confirm New Password *</Text>
+                  <Text style={[styles.label, { color: colors.textSecondary }]}>Confirm New Password *</Text>
                   {renderPasswordInput(
                     confirmPassword,
                     setConfirmPassword,
@@ -339,7 +366,7 @@ export default function CommitteeProfileScreen() {
                     ) : (
                       <>
                         <Ionicons name="key-outline" size={18} color="#FFF" style={{ marginRight: 6 }} />
-                        <Text style={styles.pwText}>Update Officer Password</Text>
+                        <Text style={[styles.pwText, { color: '#FFF' }]}>Update Officer Password</Text>
                       </>
                     )}
                   </LinearGradient>
@@ -347,9 +374,9 @@ export default function CommitteeProfileScreen() {
               </BlurView>
 
               {/* Logout Action Button */}
-              <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout} activeOpacity={0.85}>
-                <Ionicons name="log-out-outline" size={20} color={COLORS.error} style={{ marginRight: 8 }} />
-                <Text style={styles.logoutText}>Logout Officer Account</Text>
+              <TouchableOpacity style={[styles.logoutBtn, { backgroundColor: colors.glassCard, borderColor: `${colors.error}4D` }]} onPress={handleLogout} activeOpacity={0.85}>
+                <Ionicons name="log-out-outline" size={20} color={colors.error} style={{ marginRight: 8 }} />
+                <Text style={[styles.logoutText, { color: colors.error }]}>Logout Officer Account</Text>
               </TouchableOpacity>
             </>
           )}
@@ -363,35 +390,32 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   scrollContent: { padding: 20 },
   headerRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 },
-  backBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255, 255, 255, 0.1)', justifyContent: 'center', alignItems: 'center', marginRight: 12 },
-  title: { fontSize: 18, fontWeight: '800', color: COLORS.textPrimary },
-  subtitle: { fontSize: 11, color: COLORS.textSecondary, marginTop: 2 },
-  profileCard: { borderRadius: 20, padding: 18, borderWidth: 1, borderColor: COLORS.glassBorder, backgroundColor: COLORS.glassCard, marginBottom: 20 },
+  backBtn: { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center', marginRight: 12, borderWidth: 1 },
+  title: { fontSize: 18, fontWeight: '800' },
+  subtitle: { fontSize: 11, marginTop: 2 },
+  profileCard: { borderRadius: 20, padding: 18, borderWidth: 1, marginBottom: 20 },
   avatarRow: { flexDirection: 'row', alignItems: 'center' },
-  avatar: { width: 48, height: 48, borderRadius: 24, backgroundColor: 'rgba(255, 107, 53, 0.25)', justifyContent: 'center', alignItems: 'center', marginRight: 14, borderWidth: 1, borderColor: COLORS.primaryOrange },
-  avatarText: { fontSize: 20, fontWeight: '900', color: COLORS.primaryOrange },
-  userName: { fontSize: 16, fontWeight: '800', color: COLORS.textPrimary },
-  userPhone: { fontSize: 12, color: COLORS.textSecondary, marginTop: 2 },
-  commTag: { fontSize: 11, color: COLORS.gold, marginTop: 2, fontWeight: '700' },
-  roleBadge: { backgroundColor: 'rgba(255, 107, 53, 0.2)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10, borderWidth: 1, borderColor: COLORS.primaryOrange },
-  roleText: { fontSize: 10, fontWeight: '800', color: COLORS.primaryOrange },
-  glassCard: { borderRadius: 20, padding: 20, borderWidth: 1, borderColor: COLORS.glassBorder, backgroundColor: COLORS.glassCard, marginBottom: 24 },
-  cardHeader: { fontSize: 15, fontWeight: '800', color: COLORS.textPrimary, marginBottom: 16 },
+  avatar: { width: 48, height: 48, borderRadius: 24, justifyContent: 'center', alignItems: 'center', marginRight: 14, borderWidth: 1 },
+  avatarText: { fontSize: 20, fontWeight: '900' },
+  userName: { fontSize: 16, fontWeight: '800' },
+  userPhone: { fontSize: 12, marginTop: 2 },
+  commTag: { fontSize: 11, marginTop: 2, fontWeight: '700' },
+  roleBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10, borderWidth: 1 },
+  roleText: { fontSize: 10, fontWeight: '800' },
+  glassCard: { borderRadius: 20, padding: 20, borderWidth: 1, marginBottom: 24 },
+  cardHeader: { fontSize: 15, fontWeight: '800', marginBottom: 16 },
   group: { marginBottom: 14 },
-  label: { fontSize: 11, fontWeight: '700', color: COLORS.textSecondary, marginBottom: 6 },
-  input: { backgroundColor: 'rgba(255, 255, 255, 0.08)', borderRadius: 12, padding: 14, color: COLORS.textPrimary, borderWidth: 1, borderColor: COLORS.glassBorder },
+  label: { fontSize: 11, fontWeight: '700', marginBottom: 6 },
+  input: { borderRadius: 12, padding: 14, borderWidth: 1 },
   passwordContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     borderWidth: 1,
-    borderColor: COLORS.glassBorder,
     borderRadius: 12,
   },
   passwordInput: {
     flex: 1,
     padding: 14,
-    color: COLORS.textPrimary,
     fontSize: 14,
   },
   eyeBtn: {
@@ -402,7 +426,10 @@ const styles = StyleSheet.create({
   },
   pwBtn: { marginTop: 8, borderRadius: 14, overflow: 'hidden' },
   pwGradient: { paddingVertical: 14, flexDirection: 'row', justifyContent: 'center', alignItems: 'center' },
-  pwText: { color: COLORS.textPrimary, fontWeight: '800', fontSize: 14 },
-  logoutBtn: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(239, 71, 111, 0.15)', paddingVertical: 16, borderRadius: 14, borderWidth: 1, borderColor: 'rgba(239, 71, 111, 0.4)' },
-  logoutText: { color: COLORS.error, fontWeight: '800', fontSize: 14 },
+  pwText: { fontWeight: '800', fontSize: 14 },
+  logoutBtn: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', paddingVertical: 16, borderRadius: 14, borderWidth: 1 },
+  logoutText: { fontWeight: '800', fontSize: 14 },
+  themeOption: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 16, borderRadius: 12, borderWidth: 1 },
+  themeOptionActive: { borderWidth: 1 },
+  themeOptionText: { fontSize: 12, fontWeight: '700', marginTop: 8 },
 });

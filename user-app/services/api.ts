@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
-import * as FileSystem from 'expo-file-system/legacy';
+import * as FileSystem from 'expo-file-system';
 
 const getBackendUrl = () => {
   // Use production URL in production builds
@@ -113,6 +113,21 @@ export const AuthService = {
     }
     return res.data;
   },
+  sendOtp: async (phone: string, purpose: 'LOGIN' | 'FORGOT_PASSWORD') => {
+    const res = await api.post('/auth/send-otp', { phone, purpose });
+    return res.data;
+  },
+  loginWithOtp: async (phone: string, otp: string) => {
+    const res = await api.post('/auth/login-with-otp', { phone, otp });
+    if (res.data?.data?.accessToken) {
+      setAuthToken(res.data.data.accessToken, res.data.data.refreshToken);
+    }
+    return res.data;
+  },
+  resetPasswordWithOtp: async (phone: string, otp: string, newPassword: string) => {
+    const res = await api.post('/auth/reset-password-with-otp', { phone, otp, newPassword });
+    return res.data;
+  },
   register: async (data: { name: string; phone: string; password: string; email?: string }) => {
     const res = await api.post('/auth/register', data);
     if (res.data?.data?.accessToken) {
@@ -128,7 +143,7 @@ export const AuthService = {
     if (imageUri) {
       const response = await FileSystem.uploadAsync(`${API_BASE_URL}/upload`, imageUri, {
         httpMethod: 'POST',
-        uploadType: 1 as any, // FileSystemUploadType.MULTIPART
+        uploadType: 1 as any, // MULTIPART
         fieldName: 'file',
         parameters: { folder: 'avatars' },
         headers: authToken ? { Authorization: `Bearer ${authToken}` } : {},
@@ -187,7 +202,7 @@ export const DonationService = {
       });
       const response = await FileSystem.uploadAsync(`${API_BASE_URL}/donations`, imageUri, {
         httpMethod: 'POST',
-        uploadType: 1 as any,
+        uploadType: 1 as any, // MULTIPART
         fieldName: 'file',
         parameters: cleanData,
         headers: authToken ? { Authorization: `Bearer ${authToken}` } : {},

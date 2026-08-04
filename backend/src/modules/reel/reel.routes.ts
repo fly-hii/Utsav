@@ -121,33 +121,39 @@ router.get(
     try {
       const { page, limit, skip } = parsePagination(req.query);
       const currentUserId = req.user?.userId || null;
+      const committeeId = req.query.committeeId as string | undefined;
 
       let reels: any[];
+      let whereClause = "r.status = 'PUBLISHED'";
+      let queryParams: any[] = [];
+
       if (currentUserId) {
-        reels = await query(
-          `SELECT r.*, c.name as committeeName, c.templeName, c.village, c.logo, c.logoUrl, u.name as uploaderName,
-                  IF(rl.id IS NOT NULL, 1, 0) as isLiked
-           FROM reels r
-           LEFT JOIN committees c ON r.committeeId = c.id
-           LEFT JOIN users u ON r.uploadedById = u.id
-           LEFT JOIN reel_likes rl ON rl.reelId = r.id AND rl.userId = ?
-           WHERE r.status = 'PUBLISHED'
-           ORDER BY r.createdAt DESC LIMIT ${Number(limit)} OFFSET ${Number(skip)}`,
-          [currentUserId]
-        );
-      } else {
-        reels = await query(
-          `SELECT r.*, c.name as committeeName, c.templeName, c.village, c.logo, c.logoUrl, u.name as uploaderName,
-                  0 as isLiked
-           FROM reels r
-           LEFT JOIN committees c ON r.committeeId = c.id
-           LEFT JOIN users u ON r.uploadedById = u.id
-           WHERE r.status = 'PUBLISHED'
-           ORDER BY r.createdAt DESC LIMIT ${Number(limit)} OFFSET ${Number(skip)}`
-        );
+        queryParams.push(currentUserId);
       }
 
-      const countRes: any = await queryOne("SELECT COUNT(*) as total FROM reels WHERE status = 'PUBLISHED'");
+      if (committeeId) {
+        whereClause += " AND r.committeeId = ?";
+        queryParams.push(committeeId);
+      }
+
+      let queryStr = `SELECT r.*, c.name as committeeName, c.templeName, c.village, c.logo, c.logoUrl, u.name as uploaderName,
+                  ${currentUserId ? 'IF(rl.id IS NOT NULL, 1, 0)' : '0'} as isLiked
+           FROM reels r
+           LEFT JOIN committees c ON r.committeeId = c.id
+           LEFT JOIN users u ON r.uploadedById = u.id
+           ${currentUserId ? 'LEFT JOIN reel_likes rl ON rl.reelId = r.id AND rl.userId = ?' : ''}
+           WHERE ${whereClause}
+           ORDER BY r.createdAt DESC LIMIT ${Number(limit)} OFFSET ${Number(skip)}`;
+
+      reels = await query(queryStr, queryParams);
+
+      let countQueryParams: any[] = [];
+      let countWhereClause = "status = 'PUBLISHED'";
+      if (committeeId) {
+        countWhereClause += " AND committeeId = ?";
+        countQueryParams.push(committeeId);
+      }
+      const countRes: any = await queryOne(`SELECT COUNT(*) as total FROM reels WHERE ${countWhereClause}`, countQueryParams);
 
       for (const reel of reels) {
         if (reel.videoS3Key && reel.videoS3Key !== 'reels/default-reel.mp4') {

@@ -26,7 +26,7 @@ import { useRouter, useNavigation, useFocusEffect } from 'expo-router';
 import { useCallback } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ReelService } from '../../../services/api';
-import { COLORS, GRADIENTS } from '../../../constants/theme';
+import { useAppTheme } from '../../../context/ThemeContext';
 
 const { width, height } = Dimensions.get('window');
 
@@ -44,6 +44,7 @@ const ReelItem = ({
 }: any) => {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { colors, isDark } = useAppTheme();
   
   const [isFocused, setIsFocused] = useState(false);
 
@@ -175,14 +176,14 @@ const ReelItem = ({
       <View style={styles.rightSidebar}>
         {/* Like Action */}
         <TouchableOpacity onPress={() => toggleLike(item.id)} style={styles.actionBtn} activeOpacity={0.8}>
-          <Ionicons name={isLiked ? 'heart' : 'heart-outline'} size={32} color={isLiked ? '#EF476F' : '#FFF'} />
-          <Text style={styles.actionCount}>{likes}</Text>
+          <Ionicons name={isLiked ? 'heart' : 'heart-outline'} size={32} color={isLiked ? colors.error : colors.textPrimary} />
+          <Text style={[styles.actionCount, { color: colors.textPrimary }]}>{likes}</Text>
         </TouchableOpacity>
 
         {/* Comment Action */}
         <TouchableOpacity onPress={() => openCommentsModal(item)} style={styles.actionBtn} activeOpacity={0.8}>
-          <Ionicons name="chatbubble-outline" size={28} color="#FFF" />
-          <Text style={styles.actionCount}>{comments}</Text>
+          <Ionicons name="chatbubble-outline" size={28} color={colors.textPrimary} />
+          <Text style={[styles.actionCount, { color: colors.textPrimary }]}>{comments}</Text>
         </TouchableOpacity>
 
         {/* Share Action */}
@@ -199,8 +200,8 @@ const ReelItem = ({
           style={styles.actionBtn}
           activeOpacity={0.8}
         >
-          <Ionicons name="paper-plane-outline" size={28} color="#FFF" />
-          <Text style={styles.actionCount}>{item.shareCount || 0}</Text>
+          <Ionicons name="paper-plane-outline" size={28} color={colors.textPrimary} />
+          <Text style={[styles.actionCount, { color: colors.textPrimary }]}>{item.shareCount || 0}</Text>
         </TouchableOpacity>
 
         {/* Donate Action Icon */}
@@ -214,20 +215,20 @@ const ReelItem = ({
           style={styles.actionBtn}
           activeOpacity={0.8}
         >
-          <View style={styles.donateIconBg}>
-            <Ionicons name="heart" size={20} color="#FFF" />
+          <View style={[styles.donateIconBg, { backgroundColor: colors.primaryOrange }]}>
+            <Ionicons name="heart" size={20} color={colors.textPrimary} />
           </View>
-          <Text style={styles.donateIconText}>Donate</Text>
+          <Text style={[styles.donateIconText, { color: colors.primaryOrange }]}>Donate</Text>
         </TouchableOpacity>
       </View>
 
       {/* Bottom Info Overlay with Direct Donate Button */}
-      <BlurView intensity={35} tint="dark" style={[styles.bottomInfo, { paddingBottom: insets.bottom + 24 }]}>
+      <BlurView intensity={isDark ? 35 : 50} tint={isDark ? "dark" : "light"} style={[styles.bottomInfo, { paddingBottom: insets.bottom + 65, borderTopColor: colors.glassBorder }]}>
         <View style={styles.committeeRow}>
           <View style={{ flex: 1 }}>
-            <Text style={styles.committeeName}>{item.committeeName || item.committee?.name || 'Sri Rama Youth Committee'} 🛕</Text>
-            <View style={styles.villageTag}>
-              <Text style={styles.villageText}>📍 {item.village || item.committee?.village || 'Kovvur'}</Text>
+            <Text style={[styles.committeeName, { color: colors.textPrimary }]}>{item.committeeName || item.committee?.name || 'Sri Rama Youth Committee'} 🛕</Text>
+            <View style={[styles.villageTag, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.1)' }]}>
+              <Text style={[styles.villageText, { color: colors.gold }]}>📍 {item.village || item.committee?.village || 'Kovvur'}</Text>
             </View>
           </View>
 
@@ -239,16 +240,16 @@ const ReelItem = ({
                 params: { committeeId: item.committeeId || 'comm-kovvur-101' },
               })
             }
-            style={styles.quickDonateBtn}
+            style={[styles.quickDonateBtn, { backgroundColor: colors.primaryOrange, borderColor: `${colors.primaryOrange}80` }]}
             activeOpacity={0.85}
           >
-            <Ionicons name="heart" size={14} color="#FFF" style={{ marginRight: 4 }} />
-            <Text style={styles.quickDonateText}>Donate 💐</Text>
+            <Ionicons name="heart" size={14} color={colors.textPrimary} style={{ marginRight: 4 }} />
+            <Text style={[styles.quickDonateText, { color: colors.textPrimary }]}>Donate 💐</Text>
           </TouchableOpacity>
         </View>
 
-        <Text style={styles.captionText}>{item.caption || 'Sri Seetha Rama Kalyana Utsavam Grand Procession 🛕✨'}</Text>
-        {item.hashtags && <Text style={styles.hashText}>{item.hashtags}</Text>}
+        <Text style={[styles.captionText, { color: colors.textPrimary }]}>{item.caption || 'Sri Seetha Rama Kalyana Utsavam Grand Procession 🛕✨'}</Text>
+        <Text style={[styles.hashText, { color: colors.gold }]}>{item.hashtags || '#Utsav2026 #VillageFestival'}</Text>
       </BlurView>
     </View>
   );
@@ -258,6 +259,7 @@ export default function UserReelsScreen() {
   const router = useRouter();
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
+  const { colors, isDark } = useAppTheme();
   const flatListRef = useRef<FlatList>(null);
 
   const [reels, setReels] = useState<any[]>([]);
@@ -450,11 +452,11 @@ export default function UserReelsScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       {loading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator color="#FF6B35" size="large" />
-          <Text style={{ color: '#FFF', marginTop: 12, fontSize: 13 }}>Loading Festival Video Feed...</Text>
+          <ActivityIndicator color={colors.primaryOrange} size="large" />
+          <Text style={{ color: colors.textPrimary, marginTop: 12, fontSize: 13 }}>Loading Festival Video Feed...</Text>
         </View>
       ) : (
         <>
@@ -484,10 +486,10 @@ export default function UserReelsScreen() {
 
           {/* Fixed Floating Top Bar with Back Button */}
           <View style={[styles.topOverlay, { paddingTop: insets.top + 16 }]}>
-            <TouchableOpacity style={styles.backBtn} onPress={() => router.back()} activeOpacity={0.8}>
-              <Ionicons name="arrow-back" size={22} color="#FFF" />
+            <TouchableOpacity style={[styles.backBtn, { backgroundColor: colors.glassCard, borderColor: colors.glassBorder, borderWidth: 1 }]} onPress={() => router.back()} activeOpacity={0.8}>
+              <Ionicons name="arrow-back" size={22} color={colors.textPrimary} />
             </TouchableOpacity>
-            <Text style={styles.reelsHeader}>Festival Reels</Text>
+            <Text style={[styles.reelsHeader, { color: colors.textPrimary }]}>Festival Reels</Text>
           </View>
 
           {/* REAL COMMENTS BOTTOM SHEET MODAL */}
@@ -498,16 +500,16 @@ export default function UserReelsScreen() {
             onRequestClose={() => setCommentsModalVisible(false)}
           >
             <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.modalOverlay}>
-              <View style={styles.commentsSheet}>
+              <View style={[styles.commentsSheet, { backgroundColor: colors.background, borderColor: colors.glassBorder }]}>
                 {/* Header */}
-                <View style={styles.sheetHeader}>
+                <View style={[styles.sheetHeader, { borderBottomColor: colors.glassBorder }]}>
                   <View style={styles.dragHandle} />
                   <View style={styles.sheetHeaderTitleRow}>
-                    <Text style={styles.sheetTitle}>
+                    <Text style={[styles.sheetTitle, { color: colors.textPrimary }]}>
                       Comments ({activeReelForComments ? commentCountMap[activeReelForComments.id] || 0 : 0})
                     </Text>
-                    <TouchableOpacity onPress={() => setCommentsModalVisible(false)} style={styles.closeBtn}>
-                      <Ionicons name="close" size={20} color="#FFF" />
+                    <TouchableOpacity onPress={() => setCommentsModalVisible(false)} style={[styles.closeBtn, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)' }]}>
+                      <Ionicons name="close" size={20} color={colors.textPrimary} />
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -515,13 +517,13 @@ export default function UserReelsScreen() {
                 {/* Comments List */}
                 {loadingComments ? (
                   <View style={styles.commentsLoading}>
-                    <ActivityIndicator color="#FF6B35" />
-                    <Text style={{ color: '#888', marginTop: 8, fontSize: 12 }}>Loading comments...</Text>
+                    <ActivityIndicator color={colors.primaryOrange} />
+                    <Text style={{ color: colors.textSecondary, marginTop: 8, fontSize: 12 }}>Loading comments...</Text>
                   </View>
                 ) : commentsList.length === 0 ? (
                   <View style={styles.emptyComments}>
-                    <Ionicons name="chatbubbles-outline" size={40} color="#555" />
-                    <Text style={styles.emptyCommentsText}>No comments yet. Be the first to comment!</Text>
+                    <Ionicons name="chatbubbles-outline" size={40} color={colors.textSecondary} />
+                    <Text style={[styles.emptyCommentsText, { color: colors.textSecondary }]}>No comments yet. Be the first to comment!</Text>
                   </View>
                 ) : (
                   <FlatList
@@ -530,17 +532,17 @@ export default function UserReelsScreen() {
                     contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 10 }}
                     renderItem={({ item }) => (
                       <View style={styles.commentItem}>
-                        <View style={styles.avatarCircle}>
-                          <Text style={styles.avatarText}>{(item.userName || 'U')[0].toUpperCase()}</Text>
+                        <View style={[styles.avatarCircle, { backgroundColor: colors.primaryOrange }]}>
+                          <Text style={[styles.avatarText, { color: '#FFF' }]}>{(item.userName || 'U')[0].toUpperCase()}</Text>
                         </View>
-                        <View style={styles.commentContentBg}>
+                        <View style={[styles.commentContentBg, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.03)', borderColor: colors.glassBorder }]}>
                           <View style={styles.commentUserRow}>
-                            <Text style={styles.commentUserName}>{item.userName || 'Devotee'}</Text>
-                            <Text style={styles.commentTime}>
+                            <Text style={[styles.commentUserName, { color: colors.gold }]}>{item.userName || 'Devotee'}</Text>
+                            <Text style={[styles.commentTime, { color: colors.textSecondary }]}>
                               {item.createdAt ? new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Now'}
                             </Text>
                           </View>
-                          <Text style={styles.commentText}>{item.content}</Text>
+                          <Text style={[styles.commentText, { color: colors.textPrimary }]}>{item.content}</Text>
                         </View>
                       </View>
                     )}
@@ -548,18 +550,18 @@ export default function UserReelsScreen() {
                 )}
 
                 {/* Comment Input */}
-                <View style={[styles.commentInputRow, { paddingBottom: insets.bottom + 12 }]}>
+                <View style={[styles.commentInputRow, { paddingBottom: insets.bottom + 12, borderTopColor: colors.glassBorder, backgroundColor: colors.background }]}>
                   <TextInput
                     placeholder="Add a devotion comment..."
-                    placeholderTextColor="#666"
+                    placeholderTextColor={colors.textSecondary}
                     value={newCommentText}
                     onChangeText={setNewCommentText}
-                    style={styles.commentInput}
+                    style={[styles.commentInput, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0,0,0,0.05)', color: colors.textPrimary, borderColor: colors.glassBorder }]}
                   />
                   <TouchableOpacity
                     onPress={handlePostComment}
                     disabled={postingComment || !newCommentText.trim()}
-                    style={[styles.sendBtn, (!newCommentText.trim() || postingComment) && { opacity: 0.5 }]}
+                    style={[styles.sendBtn, { backgroundColor: colors.primaryOrange }, (!newCommentText.trim() || postingComment) && { opacity: 0.5 }]}
                   >
                     {postingComment ? <ActivityIndicator size="small" color="#FFF" /> : <Ionicons name="send" size={16} color="#FFF" />}
                   </TouchableOpacity>
@@ -574,51 +576,51 @@ export default function UserReelsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
+  container: { flex: 1 },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   reelPage: { width, height, justifyContent: 'center', alignItems: 'center', position: 'relative' },
   videoSim: { flex: 1, width: '100%', height: '100%', justifyContent: 'center', alignItems: 'center' },
   playCenterOverlay: { position: 'absolute', top: '45%', left: '40%', zIndex: 5 },
   videoStatusBadge: { position: 'absolute', top: 90, alignSelf: 'center', flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(0, 0, 0, 0.65)', paddingHorizontal: 14, paddingVertical: 6, borderRadius: 16, borderWidth: 1, borderColor: 'rgba(16, 185, 129, 0.5)', zIndex: 10 },
-  videoStatusText: { color: COLORS.success, fontSize: 11, fontWeight: '700' },
+  videoStatusText: { fontSize: 11, fontWeight: '700' },
   topOverlay: { position: 'absolute', top: 0, left: 20, right: 20, flexDirection: 'row', alignItems: 'center', zIndex: 20 },
-  backBtn: { width: 38, height: 38, borderRadius: 19, backgroundColor: 'rgba(0, 0, 0, 0.5)', justifyContent: 'center', alignItems: 'center', marginRight: 12 },
-  reelsHeader: { fontSize: 20, fontWeight: '900', color: COLORS.textPrimary },
+  backBtn: { width: 38, height: 38, borderRadius: 19, justifyContent: 'center', alignItems: 'center', marginRight: 12 },
+  reelsHeader: { fontSize: 20, fontWeight: '900' },
   rightSidebar: { position: 'absolute', right: 16, bottom: 120, alignItems: 'center', gap: 18, zIndex: 15 },
   actionBtn: { alignItems: 'center' },
-  actionCount: { fontSize: 11, fontWeight: '700', color: COLORS.textPrimary, marginTop: 4 },
-  donateIconBg: { width: 44, height: 44, borderRadius: 22, backgroundColor: COLORS.primaryOrange, justifyContent: 'center', alignItems: 'center', elevation: 4 },
-  donateIconText: { fontSize: 10, fontWeight: '800', color: COLORS.primaryOrange, marginTop: 4 },
-  bottomInfo: { position: 'absolute', bottom: 0, left: 0, right: 0, paddingHorizontal: 20, paddingTop: 16, borderTopWidth: 1, borderTopColor: COLORS.glassBorder, zIndex: 15 },
+  actionCount: { fontSize: 11, fontWeight: '700', marginTop: 4 },
+  donateIconBg: { width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center', elevation: 4 },
+  donateIconText: { fontSize: 10, fontWeight: '800', marginTop: 4 },
+  bottomInfo: { position: 'absolute', bottom: 0, left: 0, right: 0, paddingHorizontal: 20, paddingTop: 16, borderTopWidth: 1, zIndex: 15 },
   committeeRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 },
-  committeeName: { fontSize: 14, fontWeight: '800', color: COLORS.textPrimary },
-  villageTag: { backgroundColor: 'rgba(255, 255, 255, 0.15)', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8, marginTop: 2, alignSelf: 'flex-start' },
-  villageText: { fontSize: 10, color: COLORS.gold, fontWeight: '700' },
-  quickDonateBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.primaryOrange, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 16, borderWidth: 1, borderColor: 'rgba(245, 158, 11, 0.5)' },
-  quickDonateText: { color: COLORS.textPrimary, fontSize: 12, fontWeight: '800' },
-  captionText: { fontSize: 13, color: 'rgba(255, 255, 255, 0.9)' },
-  hashText: { fontSize: 11, color: COLORS.gold, marginTop: 4, fontWeight: '600' },
+  committeeName: { fontSize: 14, fontWeight: '800' },
+  villageTag: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8, marginTop: 2, alignSelf: 'flex-start' },
+  villageText: { fontSize: 10, fontWeight: '700' },
+  quickDonateBtn: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 7, borderRadius: 16, borderWidth: 1 },
+  quickDonateText: { fontSize: 12, fontWeight: '800' },
+  captionText: { fontSize: 13 },
+  hashText: { fontSize: 11, marginTop: 4, fontWeight: '600' },
 
   // Comments BottomSheet Modal Styles
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' },
-  commentsSheet: { backgroundColor: COLORS.glassCard, borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: height * 0.7, flex: 1, borderWidth: 1, borderColor: COLORS.glassBorder },
-  sheetHeader: { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: COLORS.glassBorder },
-  dragHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: 'rgba(255, 255, 255, 0.2)', alignSelf: 'center', marginBottom: 10 },
+  commentsSheet: { borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: height * 0.7, flex: 1, borderWidth: 1 },
+  sheetHeader: { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 12, borderBottomWidth: 1 },
+  dragHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: 'rgba(128, 128, 128, 0.4)', alignSelf: 'center', marginBottom: 10 },
   sheetHeaderTitleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  sheetTitle: { fontSize: 16, fontWeight: '800', color: COLORS.textPrimary, flex: 1 },
-  closeBtn: { width: 28, height: 28, borderRadius: 14, backgroundColor: 'rgba(255, 255, 255, 0.1)', justifyContent: 'center', alignItems: 'center' },
+  sheetTitle: { fontSize: 16, fontWeight: '800', flex: 1 },
+  closeBtn: { width: 28, height: 28, borderRadius: 14, justifyContent: 'center', alignItems: 'center' },
   commentsLoading: { padding: 40, alignItems: 'center' },
   emptyComments: { padding: 40, alignItems: 'center', justifyContent: 'center' },
-  emptyCommentsText: { color: COLORS.textMuted, marginTop: 8, fontSize: 12, textAlign: 'center' },
+  emptyCommentsText: { marginTop: 8, fontSize: 12, textAlign: 'center' },
   commentItem: { flexDirection: 'row', marginBottom: 14, gap: 10 },
-  avatarCircle: { width: 34, height: 34, borderRadius: 17, backgroundColor: COLORS.primaryOrange, justifyContent: 'center', alignItems: 'center' },
-  avatarText: { color: COLORS.textPrimary, fontWeight: '800', fontSize: 14 },
-  commentContentBg: { flex: 1, backgroundColor: 'rgba(255, 255, 255, 0.06)', borderRadius: 12, padding: 10, borderWidth: 1, borderColor: COLORS.glassBorder },
+  avatarCircle: { width: 34, height: 34, borderRadius: 17, justifyContent: 'center', alignItems: 'center' },
+  avatarText: { fontWeight: '800', fontSize: 14 },
+  commentContentBg: { flex: 1, borderRadius: 12, padding: 10, borderWidth: 1 },
   commentUserRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
-  commentUserName: { color: COLORS.gold, fontWeight: '700', fontSize: 12 },
-  commentTime: { color: 'rgba(255, 255, 255, 0.4)', fontSize: 10 },
-  commentText: { color: COLORS.textPrimary, fontSize: 13, lineHeight: 18 },
-  commentInputRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: 10, borderTopWidth: 1, borderTopColor: COLORS.glassBorder, backgroundColor: COLORS.background, gap: 10 },
-  commentInput: { flex: 1, backgroundColor: 'rgba(255, 255, 255, 0.08)', borderRadius: 20, paddingHorizontal: 16, paddingVertical: 10, color: COLORS.textPrimary, fontSize: 13, borderWidth: 1, borderColor: COLORS.glassBorder },
-  sendBtn: { width: 38, height: 38, borderRadius: 19, backgroundColor: COLORS.primaryOrange, justifyContent: 'center', alignItems: 'center' },
+  commentUserName: { fontWeight: '700', fontSize: 12 },
+  commentTime: { fontSize: 10 },
+  commentText: { fontSize: 13, lineHeight: 18 },
+  commentInputRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: 10, borderTopWidth: 1, gap: 10 },
+  commentInput: { flex: 1, borderRadius: 20, paddingHorizontal: 16, paddingVertical: 10, fontSize: 13, borderWidth: 1 },
+  sendBtn: { width: 38, height: 38, borderRadius: 19, justifyContent: 'center', alignItems: 'center' },
 });

@@ -33,4 +33,9 @@ export const env = {
   SUPER_ADMIN_EMAIL: process.env.SUPER_ADMIN_EMAIL || 'admin@utsav.com',
   SUPER_ADMIN_PASSWORD: process.env.SUPER_ADMIN_PASSWORD || 'Admin@123456',
   SUPER_ADMIN_PHONE: process.env.SUPER_ADMIN_PHONE || '9999999999',
+
+  // SMS Gateway
+  SMS_PROVIDER: process.env.SMS_PROVIDER || 'mock',
+  SMS_API_KEY: process.env.SMS_API_KEY || '',
+  SMS_SENDER_ID: process.env.SMS_SENDER_ID || 'UTSAV',
 };
