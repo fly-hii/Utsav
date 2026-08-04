@@ -11,7 +11,10 @@ export default function Footer() {
       <div className="container">
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '2rem', justifyContent: 'space-between', marginBottom: '3rem' }}>
           <div style={{ maxWidth: '300px' }}>
-            <h3 style={{ fontSize: '1.25rem', marginBottom: '1rem', color: 'var(--text-primary)' }}>Utsav App</h3>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
+              <img src="/logo.png" alt="Utsav Logo" style={{ width: 48, height: 48, borderRadius: '8px', objectFit: 'contain' }} />
+              <h3 style={{ fontSize: '1.25rem', color: 'var(--text-primary)', margin: 0 }}>Utsav App</h3>
+            </div>
             <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
               The ultimate platform for managing your events and community activities seamlessly.
             </p>

@@ -20,10 +20,8 @@ export default function Navbar() {
     }}>
       <div className="container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
         <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', color: 'var(--text-primary)', fontWeight: 700, fontSize: '1.25rem' }}>
-          <div style={{ background: 'var(--primary-color)', padding: '0.5rem', borderRadius: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Smartphone size={24} color="white" />
-          </div>
-          Utsav App
+          <img src="/logo.png" alt="Utsav Logo" style={{ width: 66, height: 66, borderRadius: '12px', objectFit: 'contain' }} />
+          For Festivals Committees and Users
         </Link>
 
         {/* Desktop Nav */}
@@ -31,10 +29,10 @@ export default function Navbar() {
           <Link to="/privacy-policy" style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>Privacy Policy</Link>
           <Link to="/terms" style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>Terms & Conditions</Link>
           <Link to="/support" style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>Support</Link>
-          <button className="btn btn-primary">Download App</button>
+          <a href="#download" className="btn btn-primary">Download Apps</a>
         </div>
       </div>
-      
+
       <style>{`
         @media (max-width: 768px) {
           .desktop-nav {

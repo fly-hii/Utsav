@@ -24,15 +24,34 @@ export default function Home() {
             The all-in-one platform to connect, manage, and engage with your committee and members seamlessly.
           </p>
           
-          <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
-            <button className="btn btn-primary" style={{ padding: '1rem 2rem', fontSize: '1.1rem' }}>
-              <Download size={20} />
-              App Store
-            </button>
-            <button className="btn btn-outline" style={{ padding: '1rem 2rem', fontSize: '1.1rem' }}>
-              <Download size={20} />
-              Google Play
-            </button>
+          <div id="download" style={{ display: 'flex', gap: '2rem', justifyContent: 'center', flexWrap: 'wrap', marginTop: '2rem' }}>
+            {/* Committee App */}
+            <div style={{ background: 'var(--glass-bg)', padding: '2rem', borderRadius: '1rem', border: '1px solid var(--glass-border)', flex: '1 1 300px', maxWidth: '400px' }}>
+              <h3 style={{ fontSize: '1.5rem', marginBottom: '0.5rem', color: 'var(--text-primary)' }}>Utsav Committee App</h3>
+              <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>For committee members to manage events, track donations, and maintain transparent expenses.</p>
+              <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
+                <a href="#committee-ios" className="btn btn-primary" style={{ padding: '0.75rem 1.25rem', flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                  <Download size={18} style={{ marginRight: '8px' }} /> App Store
+                </a>
+                <a href="#committee-android" className="btn btn-outline" style={{ padding: '0.75rem 1.25rem', flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                  <Download size={18} style={{ marginRight: '8px' }} /> Google Play
+                </a>
+              </div>
+            </div>
+
+            {/* User App */}
+            <div style={{ background: 'var(--glass-bg)', padding: '2rem', borderRadius: '1rem', border: '1px solid var(--glass-border)', flex: '1 1 300px', maxWidth: '400px' }}>
+              <h3 style={{ fontSize: '1.5rem', marginBottom: '0.5rem', color: 'var(--text-primary)' }}>Utsav User App</h3>
+              <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>For devotees and villagers to follow festivals, view live streams, and make digital offerings.</p>
+              <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
+                <a href="#user-ios" className="btn btn-primary" style={{ padding: '0.75rem 1.25rem', flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                  <Download size={18} style={{ marginRight: '8px' }} /> App Store
+                </a>
+                <a href="#user-android" className="btn btn-outline" style={{ padding: '0.75rem 1.25rem', flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                  <Download size={18} style={{ marginRight: '8px' }} /> Google Play
+                </a>
+              </div>
+            </div>
           </div>
         </div>
       </section>
