@@ -88,16 +88,11 @@ export default function CommitteeRegisterScreen() {
         if (reverse && reverse.length > 0) {
           const p = reverse[0];
           
-          // Improved mapping for Indian addresses from Expo Location
-          const locVillage = p.city || p.street || p.name || p.subregion || '';
-          const locMandal = p.subregion || p.city || '';
-          const locDistrict = p.district || p.subregion || '';
+          // As requested, do NOT auto-fill Village, Mandal, or District from GPS.
+          // The user must fill these manually.
+          
           const locState = p.region || 'Andhra Pradesh';
-
-          if (locVillage) setVillage(locVillage);
-          if (locMandal) setMandal(locMandal);
-          if (locDistrict) setDistrict(locDistrict);
-          if (locState) setState(locState);
+          setState(locState);
         }
       } catch (err) {
         setGpsStatus('Default GPS Coordinates');
