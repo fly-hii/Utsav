@@ -28,6 +28,7 @@ export default function Navbar() {
         <div style={{ display: 'flex', gap: '2rem', alignItems: 'center' }} className="desktop-nav">
           <Link to="/privacy-policy" style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>Privacy Policy</Link>
           <Link to="/terms" style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>Terms & Conditions</Link>
+          <Link to="/child-safety-standards" style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>Child Safety Standards</Link>
           <Link to="/support" style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>Support</Link>
           <a href="#download" className="btn btn-primary">Download Apps</a>
         </div>
