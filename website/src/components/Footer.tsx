@@ -26,6 +26,7 @@ export default function Footer() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                 <Link to="/privacy-policy" style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Privacy Policy</Link>
                 <Link to="/terms" style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Terms of Service</Link>
+                <Link to="/child-safety-standards" style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Child Safety Standards</Link>
               </div>
             </div>
             

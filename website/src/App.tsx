@@ -5,6 +5,7 @@ import Home from './pages/Home';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import TermsAndConditions from './pages/TermsAndConditions';
 import Support from './pages/Support';
+import ChildSafetyStandards from './pages/ChildSafetyStandards';
 
 function App() {
   return (
@@ -17,6 +18,7 @@ function App() {
             <Route path="/privacy-policy" element={<PrivacyPolicy />} />
             <Route path="/terms" element={<TermsAndConditions />} />
             <Route path="/support" element={<Support />} />
+            <Route path="/child-safety-standards" element={<ChildSafetyStandards />} />
           </Routes>
         </main>
         <Footer />
